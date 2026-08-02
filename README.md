@@ -58,17 +58,7 @@ Courier Tracking API; müşterinin sipariş oluşturduğu, en yakın müsait kur
 
 ![Sistem mimarisi](docs/architecture.png)
 
-```mermaid
-flowchart LR
-  UI[React UI :3000] -->|JWT REST| API[Spring Boot :8080]
-  UI -->|STOMP /ws-courier| API
-  API --> PG[(PostgreSQL)]
-  API --> Redis[(Redis GEO)]
-  API --> RMQ[RabbitMQ STOMP]
-  RMQ -->|/topic/courier-location.id| UI
-```
-
-Konum topic (RabbitMQ nested `/` kabul etmez): `/topic/courier-location.{courierId}`
+WebSocket konum topic’i (RabbitMQ nested `/` kabul etmez): `/topic/courier-location.{courierId}`
 
 ---
 
