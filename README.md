@@ -135,8 +135,8 @@ WebSocket konum topic’i (RabbitMQ nested `/` kabul etmez): `/topic/courier-loc
 ## Kurulum (Docker)
 
 ```bash
-git clone https://github.com/BerkMermer/courier-tracking-api.git
-cd courier-tracking-api
+git clone https://github.com/BerkMermer/Live-Courier-Tracking.git
+cd Live-Courier-Tracking
 
 cp .env.example .env
 # .env içinde POSTGRES_PASSWORD ve JWT_SECRET doldurun
@@ -207,7 +207,7 @@ npm run dev
 ## Proje Yapısı
 
 ```
-courier-tracking-api/
+Live-Courier-Tracking/
 ├── src/main/java/com/berk/courier_tracking_api/
 │   ├── config/          # Redis, Swagger, WebSocket (RabbitMQ relay)
 │   ├── controller/      # Auth, Order, Courier
