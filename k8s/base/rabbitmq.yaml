@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  labels:
+    app.kubernetes.io/name: rabbitmq
+spec:
+  selector:
+    app.kubernetes.io/name: rabbitmq
+  ports:
+    - name: stomp
+      port: 61613
+      targetPort: stomp
+    - name: amqp
+      port: 5672
+      targetPort: amqp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management-alpine
+          command: ["sh","-c","rabbitmq-plugins enable --offline rabbitmq_stomp && rabbitmq-server"]
+          ports:
+            - name: stomp
+              containerPort: 61613
+            - name: amqp
+              containerPort: 5672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: RABBITMQ_PASSWORD
+          startupProbe:
+            exec:
+              command: ["rabbitmq-diagnostics","-q","ping"]
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: stomp

@@ -6,7 +6,7 @@ import { Client } from '@stomp/stompjs';
 import { haversineKm, etaMinutes, formatKm } from './utils/geo';
 import { useRoadRoute } from './hooks/useRoadRoute';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? '' : 'http://localhost:8080');
 
 function App() {
   const [email, setEmail] = useState('demo-153357@example.com');
