@@ -1,0 +1,14 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: courier-config
+data:
+  POSTGRES_DB: courier_tracking
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_STOMP_PORT: "61613"
+  APP_PORT: "8080"
+  JWT_EXPIRATION: "86400000"
+  CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:18080,http://localhost:30080,http://127.0.0.1,http://127.0.0.1:18080,http://127.0.0.1:30080,http://courier.local"
+  DATABASE_URL: jdbc:postgresql://postgres:5432/courier_tracking
