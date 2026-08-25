@@ -9,6 +9,7 @@
 [![Redis](https://img.shields.io/badge/Redis-7-red?logo=redis)](https://redis.io/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-STOMP-FF6600?logo=rabbitmq)](https://www.rabbitmq.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Kustomize-326CE5?logo=kubernetes)](https://kubernetes.io/)
 
 ---
 
@@ -20,6 +21,7 @@
 - [Özellikler](#özellikler)
 - [API Endpoint’leri](#api-endpointleri)
 - [Kurulum (Docker)](#kurulum-docker)
+- [Kubernetes](#kubernetes)
 - [Kullanım](#kullanım)
 - [Frontend](#frontend)
 - [Proje Yapısı](#proje-yapısı)
@@ -41,6 +43,7 @@ Courier Tracking API; müşterinin sipariş oluşturduğu, en yakın müsait kur
 - RabbitMQ STOMP relay ile konum yayını
 - Soft delete, UUID `trackingNumber`, sahiplik kontrolü (BOLA önlemi)
 - Docker Compose ile tek komutta stack
+- Kubernetes (Kustomize): probe, Secret/ConfigMap, StatefulSet, Ingress, HPA
 
 ### Bilinçli kapsam dışı
 
@@ -49,7 +52,6 @@ Courier Tracking API; müşterinin sipariş oluşturduğu, en yakın müsait kur
 | Misafir sipariş | Auth zorunlu |
 | Kurye self-register | Seed / SQL ile `COURIER` |
 | AI chat | Kaldırıldı |
-| Kubernetes / k8s | Bu repoda yok (Compose yeterli) |
 | Ödeme, push, admin paneli | Ürün kapsamı dışı |
 
 ---
@@ -71,7 +73,7 @@ WebSocket konum topic’i (RabbitMQ nested `/` kabul etmez): `/topic/courier-loc
 | Realtime | STOMP WebSocket + SockJS, RabbitMQ (broker relay) |
 | API docs | SpringDoc OpenAPI (Swagger UI) |
 | Frontend | React, Vite, Tailwind, Leaflet + OSRM rota |
-| Test / ops | JUnit, Mockito, Testcontainers, Docker Compose |
+| Test / ops | JUnit, Mockito, Testcontainers, Docker Compose, Kubernetes (Kustomize) |
 
 ---
 
@@ -161,6 +163,135 @@ docker compose down
 
 ---
 
+## Kubernetes
+
+Günlük geliştirme için Compose yeter. Staj / portföy tarafında asıl kazanç Kubernetes: servis keşfi, probe, Secret, kalıcı volume, Ingress ve HPA.
+
+Yerel overlay (`k8s/overlays/local`) Docker Desktop Kubernetes veya kind içindir. Image’lar registry’ye push edilmez; `courier-tracking-api:local` ve `courier-tracking-frontend:local` olarak cluster’a yüklenir.
+
+```
+Ingress / NodePort
+        │
+        ▼
+   frontend (nginx)  ── /api  /ws-courier  /swagger-ui ──►  api (Spring Boot)
+                                                              │
+                                    ┌─────────────────────────┼─────────────────────────┐
+                                    ▼                         ▼                         ▼
+                               postgres (STS+PVC)           redis                  rabbitmq (STOMP)
+```
+
+Frontend production image same-origin proxy kullanır; tarayıcı `localhost:8080`’e gitmez. API `GET /actuator/health/liveness|readiness` ile ayağa kalkmayı bekler.
+
+### Windows (Docker Desktop) — önerilen
+
+1. Docker Desktop → Settings → Kubernetes → **Enable Kubernetes** → Apply.
+2. PowerShell:
+
+```powershell
+cd "c:\Users\Berk Mermer\Desktop\Projects\courier-tracking-api"
+.\scripts\k8s-deploy.ps1
+```
+
+| Servis | URL |
+|--------|-----|
+| Frontend | http://localhost:30080 |
+| Swagger | http://localhost:30808/swagger-ui.html |
+| Health | http://localhost:30808/actuator/health |
+
+NodePort tarayıcıda açılmazsa:
+
+```powershell
+kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
+```
+
+Sonra http://127.0.0.1:18080
+
+### kind (opsiyonel)
+
+```powershell
+.\scripts\k8s-deploy.ps1 -Kind
+```
+
+Linux / macOS: `chmod +x scripts/k8s-deploy.sh && ./scripts/k8s-deploy.sh` (`--kind` ile kind).
+
+### Elle uygulamak
+
+```bash
+docker build -t courier-tracking-api:local .
+docker build -t courier-tracking-frontend:local -f frontend/Dockerfile.prod frontend
+kubectl apply -k k8s/overlays/local
+kubectl -n courier-tracking get pods,svc
+```
+
+### Ne var, neden var
+
+| Parça | Neden |
+|-------|--------|
+| Namespace `courier-tracking` | Diğer local workload’lardan ayrışır |
+| ConfigMap / Secret | Non-secret config vs şifre/JWT ayrımı |
+| Postgres StatefulSet + PVC | DB için kimlik + disk |
+| Redis / RabbitMQ Deployment | GEO index ve STOMP relay |
+| Init container | API, 5432 / 6379 / 61613 hazır olmadan start etmez |
+| startup / liveness / readiness | Spring Actuator probe |
+| Ingress + NodePort | Cluster içi HTTP ve local tarayıcı |
+| HPA (CPU %70, 1–3 replica) | metrics-server yoksa ölçeklenmez, obje durur |
+
+`k8s/base/secret.yaml` **sadece local**. Gerçek cluster’da:
+
+```bash
+kubectl -n courier-tracking create secret generic courier-secrets --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+```
+
+`JWT_SECRET` Base64 ve en az 32 byte olmalı (`openssl rand -base64 32`).
+
+### Docker Desktop kind modu (sık takılan yer)
+
+Docker Desktop, Kubernetes'i iki şekilde kurabiliyor (Settings → Kubernetes → *Cluster settings*):
+
+| Mod | Node adı | Yerel imaj davranışı |
+|-----|----------|----------------------|
+| **kind** (yeni varsayılan) | `desktop-control-plane` | `docker build` imajları cluster'a **görünmez** |
+| **Kubeadm** | `docker-desktop` | Yerel imajlar doğrudan kullanılır |
+
+kind modundaysan `ErrImageNeverPull` / `ErrImagePull` alırsın. Deploy script'i node'u tespit edip imajı kendisi aktarır; elle yapmak istersen:
+
+```powershell
+# Node container'ı görünür olmalı:
+# Settings > Kubernetes > Show system containers (advanced) > Apply
+docker save courier-tracking-api:local -o api.tar
+docker cp api.tar desktop-control-plane:/api.tar
+docker exec desktop-control-plane ctr -n k8s.io images import /api.tar
+```
+
+`docker save ... | docker exec -i ... ctr images import -` şeklinde **pipe kullanma**; PowerShell binary akışı bozar (`archive/tar: invalid tar header`).
+
+Aynı modda NodePort host'a yayınlanmaz (`localhost:30080` bağlanmaz). Port-forward kullan:
+
+```powershell
+kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
+```
+
+Yerel HTTP registry (`localhost:5000`) bu modda işe yaramaz: çekme istekleri Docker Desktop'ın `registry-mirror`'ından geçer ve `500 Internal Server Error` döner.
+
+### İlk kullanıcı
+
+Cluster'daki Postgres boş başlar; Flyway sadece şemayı kurar, kullanıcı eklemez. Panelde giriş yapabilmek için önce kayıt ol:
+
+```powershell
+$b = @{ fullName="Berk Mermer"; email="berk@example.com"; phoneNumber="+905551112233"; password="securePass123" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:18080/api/v1/auth/register -ContentType "application/json" -Body $b
+```
+
+`curl.exe` ile `-d "{\"...\"}"` denemeyin; PowerShell 5.1 tırnakları bozar ve `JSON parse error` alırsınız.
+
+### Temizlik
+
+```powershell
+kubectl delete -k k8s/overlays/local
+# kind kullandıysan: kind delete cluster --name courier
+```
+
+---
 ## Kullanım
 
 ### Swagger demo akışı
@@ -218,7 +349,12 @@ Live-Courier-Tracking/
 ├── src/main/resources/
 │   ├── application.yaml
 │   └── db/migration/    # Flyway
-├── frontend/            # React + Vite + Leaflet
+├── frontend/            # React + Vite + Leaflet (k8s: nginx production image)
+├── k8s/
+│   ├── base/            # Namespace, ConfigMap, Secret, STS, Deploy, Ingress, HPA
+│   ├── overlays/local/  # NodePort + local image tag
+│   └── kind-cluster.yaml
+├── scripts/             # k8s-deploy.ps1 / k8s-deploy.sh
 ├── docs/
 │   ├── architecture.png
 │   └── screenshots/
@@ -239,6 +375,7 @@ Live-Courier-Tracking/
 | Şifre | BCrypt |
 | Soft delete | `deleted_at` + `@SQLRestriction` |
 | CORS | Allowlist (`app.cors.allowed-origins`) |
+| Probe | `/actuator/health` public; diger actuator kapali |
 
 ---
 
