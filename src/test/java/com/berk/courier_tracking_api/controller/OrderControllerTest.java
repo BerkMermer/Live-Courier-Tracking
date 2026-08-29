@@ -62,6 +62,7 @@ class OrderControllerTest {
 
     private OrderResponse sampleOrderResponse() {
         return new OrderResponse(
+                1L,
                 "TRK-1", "Kadıköy, İstanbul", 40.99, 29.03, "Beşiktaş, İstanbul",
                 OrderStatus.PENDING, "Ayşe Müşteri", null, null, LocalDateTime.now());
     }
@@ -76,6 +77,7 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.trackingNumber").value("TRK-1"));
     }
 

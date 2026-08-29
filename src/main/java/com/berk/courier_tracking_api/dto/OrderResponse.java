@@ -6,6 +6,7 @@ import com.berk.courier_tracking_api.enums.OrderStatus;
 import java.time.LocalDateTime;
 
 public record OrderResponse(
+        Long id,
         String trackingNumber,
         String pickupAddress,
         Double pickupLatitude,
@@ -20,6 +21,7 @@ public record OrderResponse(
 
     public static OrderResponse from(Order order) {
         return new OrderResponse(
+                order.getId(),
                 order.getTrackingNumber(),
                 order.getPickupAddress(),
                 order.getPickupLatitude(),
