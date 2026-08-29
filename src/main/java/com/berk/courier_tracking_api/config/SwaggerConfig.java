@@ -22,8 +22,9 @@ public class SwaggerConfig {
                         .description("""
                                 Gerçek zamanlı kurye konum takibi, akıllı kurye atama \
                                 ve sipariş yönetimi REST API'si.
-                                Kimlik doğrulama için önce /api/v1/auth/login veya \
-                                /api/v1/auth/register endpoint'lerinden JWT token alın, \
+                                Kimlik doğrulama için önce /api/v1/auth/login, \
+                                /api/v1/auth/register veya /api/v1/auth/register-courier \
+                                endpoint'lerinden JWT token alın, \
                                 ardından Swagger UI'da 'Authorize' butonuna \
                                 'Bearer <token>' formatında yapıştırın.""")
                         .version("v1.0.0")

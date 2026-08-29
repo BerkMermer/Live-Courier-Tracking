@@ -68,4 +68,22 @@ public class OrderController {
         OrderResponse response = orderService.assignCourierToOrder(orderId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{orderId}/pickup")
+    @PreAuthorize("hasRole('COURIER')")
+    public ResponseEntity<OrderResponse> pickup(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(orderService.markPickedUp(orderId, principal));
+    }
+
+    @PostMapping("/{orderId}/deliver")
+    @PreAuthorize("hasRole('COURIER')")
+    public ResponseEntity<OrderResponse> deliver(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(orderService.markDelivered(orderId, principal));
+    }
 }

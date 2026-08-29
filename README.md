@@ -58,7 +58,6 @@ A customer places an order, the nearest available courier is assigned, and the c
 | Topic | Note |
 |-------|------|
 | Guest checkout | Authentication is required |
-| Courier self-registration | Courier accounts come from seed / SQL |
 | Payments, push, admin UI | Not part of this demo |
 
 ---
@@ -115,7 +114,7 @@ Location topic: `/topic/courier-location.{courierId}` (`.` instead of `/` — Ra
 ## Features
 
 - **Auth** — `POST /register` and `POST /login` return a JWT. Public registration is always `CUSTOMER`. Endpoints use `@PreAuthorize` plus service-layer ownership checks.
-- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only). `assign-courier` picks the nearest `AVAILABLE` courier from Redis GEO (10 km).
+- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only). `assign-courier` picks the nearest `AVAILABLE` courier from Redis GEO (10 km). Assigned courier: `pickup` (`ASSIGNED` → `PICKED_UP`), then `deliver` (`PICKED_UP` → `DELIVERED`, courier `AVAILABLE` again).
 - **Location** — `PUT /couriers/location` writes PostgreSQL, Redis GEO, and STOMP. A customer may `GET` a courier’s location only with an active order (`ASSIGNED` / `PICKED_UP`).
 - **Map** — Leaflet + OSRM route, motorcycle marker, remaining distance / ETA, order history.
 
@@ -143,13 +142,13 @@ Spring Boot **4.0.7** is the parent in `pom.xml` (not a 3.x typo).
 Swagger: http://localhost:8080/swagger-ui.html — **Authorize** with `Bearer <JWT>`.
 
 1. `POST /api/v1/auth/register` — create a customer
-2. `POST /api/v1/auth/login` — copy the JWT
-3. `POST /api/v1/orders` — pickup lat/lng
+2. `POST /api/v1/auth/register-courier` — create a courier (user + profile)
+3. `POST /api/v1/auth/login` — copy the JWT (switch tokens as needed)
 4. Courier JWT: `PUT /api/v1/couriers/location`
-5. `POST /api/v1/orders/{id}/assign-courier`
-6. Open http://localhost:3000
-
-Courier accounts are seeded. There is no public courier-register endpoint.
+5. Customer JWT: `POST /api/v1/orders` — use `id` from the response
+6. Courier JWT: `POST /api/v1/orders/{id}/assign-courier`
+7. Open http://localhost:3000
+8. Courier JWT: `POST /api/v1/orders/{id}/pickup` then `/deliver`
 
 Frontend without Compose: `cd frontend && npm install && npm run dev`.
 
@@ -163,7 +162,8 @@ Interactive docs: http://localhost:8080/swagger-ui.html
 
 | Method | Path | Access | Description |
 |--------|------|--------|-------------|
-| POST | `/register` | Public | Register and return JWT |
+| POST | `/register` | Public | Customer register → JWT |
+| POST | `/register-courier` | Public | Courier register (user + profile) → JWT |
 | POST | `/login` | Public | Login and return JWT |
 
 ### Orders — `/api/v1/orders`
@@ -175,6 +175,8 @@ Interactive docs: http://localhost:8080/swagger-ui.html
 | GET | `/{orderId}` | CUSTOMER / COURIER / ADMIN | Detail (ownership enforced) |
 | POST | `/{orderId}/cancel` | CUSTOMER | Cancel order |
 | POST | `/{orderId}/assign-courier` | ADMIN / COURIER | Assign nearest courier |
+| POST | `/{orderId}/pickup` | COURIER | `ASSIGNED` → `PICKED_UP` (assigned courier only) |
+| POST | `/{orderId}/deliver` | COURIER | `PICKED_UP` → `DELIVERED`; courier becomes `AVAILABLE` |
 
 ### Couriers — `/api/v1/couriers`
 
@@ -238,7 +240,7 @@ live-courier-tracking/
 | Auth | JWT (HS256), stateless. Local demo: default secret in yaml / `.env` |
 | BOLA | Order detail/cancel: ownership. Courier location + STOMP topic: customer must have an active order with that courier |
 | WebSocket | Handshake origins = REST CORS allowlist. Subscribe only `/topic/courier-location.{id}` |
-| Roles | Registration is always `CUSTOMER` |
+| Roles | `POST /register` → `CUSTOMER`; `POST /register-courier` → `COURIER` + profile |
 | Passwords | BCrypt |
 | Soft delete | `deleted_at` + `@SQLRestriction` |
 | CORS | Allowlist (`app.cors.allowed-origins`) for REST and SockJS |

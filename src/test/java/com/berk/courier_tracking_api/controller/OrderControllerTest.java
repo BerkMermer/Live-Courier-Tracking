@@ -162,4 +162,29 @@ class OrderControllerTest {
                         .with(user(principal(UserRole.CUSTOMER, 1L))))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void pickup_asCourier_shouldReturn200() throws Exception {
+        when(orderService.markPickedUp(eq(1L), any())).thenReturn(sampleOrderResponse());
+
+        mockMvc.perform(post("/api/v1/orders/1/pickup")
+                        .with(user(principal(UserRole.COURIER, 2L))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void pickup_asCustomer_shouldReturn403Forbidden() throws Exception {
+        mockMvc.perform(post("/api/v1/orders/1/pickup")
+                        .with(user(principal(UserRole.CUSTOMER, 1L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deliver_asCourier_shouldReturn200() throws Exception {
+        when(orderService.markDelivered(eq(1L), any())).thenReturn(sampleOrderResponse());
+
+        mockMvc.perform(post("/api/v1/orders/1/deliver")
+                        .with(user(principal(UserRole.COURIER, 2L))))
+                .andExpect(status().isOk());
+    }
 }

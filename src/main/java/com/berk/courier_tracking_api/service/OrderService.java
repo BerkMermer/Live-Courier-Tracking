@@ -18,4 +18,8 @@ public interface OrderService {
     OrderResponse cancelOrder(Long orderId, UserPrincipal principal);
 
     OrderResponse assignCourierToOrder(Long orderId);
+
+    OrderResponse markPickedUp(Long orderId, UserPrincipal principal);
+
+    OrderResponse markDelivered(Long orderId, UserPrincipal principal);
 }
