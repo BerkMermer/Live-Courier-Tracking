@@ -3,7 +3,7 @@ import LiveMap from './components/LiveMap';
 import DashboardPanel from './components/DashboardPanel';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Client } from '@stomp/stompjs';
-import { haversineKm, etaMinutes, formatKm } from './utils/geo';
+import { formatKm } from './utils/geo';
 import { useRoadRoute } from './hooks/useRoadRoute';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? '' : 'http://localhost:8080');
@@ -213,17 +213,8 @@ function App() {
   );
 
   const trackingMetrics = useMemo(() => {
-    const crowDist = haversineKm(
-      courierLocation?.lat,
-      courierLocation?.lng,
-      order?.pickupLatitude,
-      order?.pickupLongitude
-    );
-    const dist = roadRoute.distanceKm ?? crowDist;
-    const eta =
-      roadRoute.durationMin != null
-        ? roadRoute.durationMin
-        : etaMinutes(crowDist);
+    const dist = roadRoute.distanceKm;
+    const eta = roadRoute.durationMin;
     return {
       distanceLabel: formatKm(dist),
       etaLabel: eta == null ? '—' : `~${eta} dk`,
@@ -237,8 +228,6 @@ function App() {
     };
   }, [
     courierLocation,
-    order?.pickupLatitude,
-    order?.pickupLongitude,
     roadRoute.distanceKm,
     roadRoute.durationMin,
   ]);

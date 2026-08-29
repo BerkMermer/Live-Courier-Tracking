@@ -2,6 +2,7 @@ package com.berk.courier_tracking_api.service;
 
 import com.berk.courier_tracking_api.dto.OrderCreateRequest;
 import com.berk.courier_tracking_api.dto.OrderResponse;
+import com.berk.courier_tracking_api.entity.CourierProfile;
 import com.berk.courier_tracking_api.entity.Order;
 import com.berk.courier_tracking_api.entity.User;
 import com.berk.courier_tracking_api.enums.CourierStatus;
@@ -110,5 +111,66 @@ class OrderServiceTest {
         assertEquals("Şu anda müsait kurye bulunmamaktadır", exception.getMessage());
         verify(orderRepository).findById(orderId);
         verify(courierProfileRepository).findByStatus(CourierStatus.AVAILABLE);
+    }
+
+    @Test
+    void assignCourierToOrder_WhenRedisReturnsNearbyAvailable_ShouldAssignThatCourier() {
+        User customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Berk Mermer");
+
+        Long orderId = 42L;
+        Order pendingOrder = new Order();
+        pendingOrder.setId(orderId);
+        pendingOrder.setCustomer(customer);
+        pendingOrder.setStatus(OrderStatus.PENDING);
+        pendingOrder.setPickupLatitude(40.9909);
+        pendingOrder.setPickupLongitude(29.0303);
+
+        User courierUser = new User();
+        courierUser.setId(10L);
+        courierUser.setFullName("Ahmet Kurye");
+
+        CourierProfile nearby = new CourierProfile();
+        nearby.setId(7L);
+        nearby.setUser(courierUser);
+        nearby.setStatus(CourierStatus.AVAILABLE);
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(nearby));
+        when(redisLocationService.findNearbyCouriers(40.9909, 29.0303)).thenReturn(List.of(7L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.assignCourierToOrder(orderId);
+
+        assertEquals(OrderStatus.ASSIGNED, response.status());
+        assertEquals(7L, response.courierId());
+        assertEquals(CourierStatus.ON_DELIVERY, nearby.getStatus());
+    }
+
+    @Test
+    void assignCourierToOrder_WhenRedisHasNoNearbyCourier_ShouldThrowException() {
+        Long orderId = 42L;
+        Order pendingOrder = new Order();
+        pendingOrder.setId(orderId);
+        pendingOrder.setStatus(OrderStatus.PENDING);
+        pendingOrder.setPickupLatitude(40.9909);
+        pendingOrder.setPickupLongitude(29.0303);
+
+        CourierProfile available = new CourierProfile();
+        available.setId(7L);
+        available.setStatus(CourierStatus.AVAILABLE);
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(available));
+        when(redisLocationService.findNearbyCouriers(40.9909, 29.0303)).thenReturn(List.of());
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> orderService.assignCourierToOrder(orderId)
+        );
+
+        assertEquals("Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)",
+                exception.getMessage());
     }
 }

@@ -1,5 +1,6 @@
 package com.berk.courier_tracking_api.security;
 
+import com.berk.courier_tracking_api.enums.OrderStatus;
 import com.berk.courier_tracking_api.repository.CourierProfileRepository;
 import com.berk.courier_tracking_api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class WebSocketSecurity implements ChannelInterceptor {
     private boolean isAuthorized(String destination, Principal principal) {
         Matcher matcher = COURIER_LOCATION_TOPIC.matcher(destination);
         if (!matcher.matches()) {
-            return true;
+            return false;
         }
 
         if (!(principal instanceof UsernamePasswordAuthenticationToken authToken)
@@ -77,7 +78,8 @@ public class WebSocketSecurity implements ChannelInterceptor {
             case COURIER -> courierProfileRepository.findByUser_Id(userPrincipal.getId())
                     .map(courier -> courier.getId().equals(courierId))
                     .orElse(false);
-            case CUSTOMER -> orderRepository.existsByCustomer_IdAndCourier_Id(userPrincipal.getId(), courierId);
+            case CUSTOMER -> orderRepository.existsByCustomer_IdAndCourier_IdAndStatusIn(
+                    userPrincipal.getId(), courierId, OrderStatus.liveTracking());
         };
     }
 }

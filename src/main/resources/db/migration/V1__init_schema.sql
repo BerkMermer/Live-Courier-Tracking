@@ -100,5 +100,5 @@ CREATE UNIQUE INDEX idx_orders_tracking ON orders (tracking_number);
 COMMENT ON TABLE orders IS 'Kurye teslimat siparişleri';
 COMMENT ON COLUMN orders.tracking_number IS 'UUID tabanlı dış takip numarası — id sızdırılmaz';
 COMMENT ON COLUMN orders.courier_id IS 'NULL = henüz kurye atanmamış (PENDING)';
-COMMENT ON COLUMN orders.pickup_latitude IS 'Alım noktası enlemi — Redis GEO / Haversine eşleştirme için';
-COMMENT ON COLUMN orders.pickup_longitude IS 'Alım noktası boylamı — Redis GEO / Haversine eşleştirme için';
+COMMENT ON COLUMN orders.pickup_latitude IS 'Alım noktası enlemi — Redis GEO eşleştirme için';
+COMMENT ON COLUMN orders.pickup_longitude IS 'Alım noktası boylamı — Redis GEO eşleştirme için';

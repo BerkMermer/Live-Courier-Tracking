@@ -89,7 +89,7 @@ class CourierControllerTest {
 
     @Test
     void getCourierLocation_asCustomer_shouldReturn200() throws Exception {
-        when(courierProfileService.getLocationById(5L)).thenReturn(sampleLocationResponse(5L));
+        when(courierProfileService.getLocationById(eq(5L), any())).thenReturn(sampleLocationResponse(5L));
 
         mockMvc.perform(get("/api/v1/couriers/5/location")
                         .with(user(principal(UserRole.CUSTOMER, 1L))))
@@ -99,7 +99,7 @@ class CourierControllerTest {
 
     @Test
     void getCourierLocation_asAdmin_shouldReturn200() throws Exception {
-        when(courierProfileService.getLocationById(5L)).thenReturn(sampleLocationResponse(5L));
+        when(courierProfileService.getLocationById(eq(5L), any())).thenReturn(sampleLocationResponse(5L));
 
         mockMvc.perform(get("/api/v1/couriers/5/location")
                         .with(user(principal(UserRole.ADMIN, 99L))))
