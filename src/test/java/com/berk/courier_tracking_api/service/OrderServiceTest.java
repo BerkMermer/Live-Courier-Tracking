@@ -74,6 +74,7 @@ class OrderServiceTest {
         OrderResponse response = orderService.createOrder(request, customerId);
 
         assertNotNull(response);
+        assertEquals(100L, response.id());
         assertNotNull(response.trackingNumber());
         assertEquals(OrderStatus.PENDING, response.status());
         assertEquals("Kadıköy, İstanbul", response.pickupAddress());

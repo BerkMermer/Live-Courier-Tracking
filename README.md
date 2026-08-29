@@ -50,7 +50,7 @@ A customer places an order, the nearest available courier is assigned, and the c
 | **Auth** | JWT with roles `CUSTOMER`, `COURIER`, `ADMIN` |
 | **Assignment** | Redis GEO (`GEORADIUS`, 10 km); courier must have sent `PUT /couriers/location` |
 | **Realtime** | RabbitMQ STOMP broker relay |
-| **Orders** | UUID `trackingNumber`, soft delete, ownership checks (BOLA mitigation) |
+| **Orders** | Numeric `id` in API JSON, UUID `trackingNumber`, soft delete, ownership checks |
 | **Ops** | Docker Compose stack; Kubernetes (Kustomize) with probes, Secret/ConfigMap, StatefulSet, Ingress, HPA |
 
 ### Out of scope
