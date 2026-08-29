@@ -48,7 +48,7 @@ A customer places an order, the nearest available courier is assigned, and the c
 | | |
 |---|---|
 | **Auth** | JWT with roles `CUSTOMER`, `COURIER`, `ADMIN` |
-| **Assignment** | Redis GEO, Haversine fallback if Redis is empty |
+| **Assignment** | Redis GEO (`GEORADIUS`, 10 km); courier must have sent `PUT /couriers/location` |
 | **Realtime** | RabbitMQ STOMP broker relay |
 | **Orders** | UUID `trackingNumber`, soft delete, ownership checks (BOLA mitigation) |
 | **Ops** | Docker Compose stack; Kubernetes (Kustomize) with probes, Secret/ConfigMap, StatefulSet, Ingress, HPA |
@@ -115,8 +115,8 @@ Location topic: `/topic/courier-location.{courierId}` (`.` instead of `/` — Ra
 ## Features
 
 - **Auth** — `POST /register` and `POST /login` return a JWT. Public registration is always `CUSTOMER`. Endpoints use `@PreAuthorize` plus service-layer ownership checks.
-- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only). `assign-courier` picks the nearest `AVAILABLE` courier.
-- **Location** — `PUT /couriers/location` writes PostgreSQL, Redis GEO, and STOMP.
+- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only). `assign-courier` picks the nearest `AVAILABLE` courier from Redis GEO (10 km).
+- **Location** — `PUT /couriers/location` writes PostgreSQL, Redis GEO, and STOMP. A customer may `GET` a courier’s location only with an active order (`ASSIGNED` / `PICKED_UP`).
 - **Map** — Leaflet + OSRM route, motorcycle marker, remaining distance / ETA, order history.
 
 ---
@@ -211,8 +211,7 @@ live-courier-tracking/
 │   ├── controller/      # Auth, Order, Courier
 │   ├── dto/ entity/ enums/ exception/ repository/
 │   ├── security/        # JWT filter, WebSocket auth
-│   ├── service/         # Order, Courier, Redis GEO
-│   └── util/            # Haversine
+│   └── service/         # Order, Courier, Redis GEO
 ├── src/main/resources/
 │   ├── application.yaml
 │   └── db/migration/    # Flyway
@@ -236,13 +235,15 @@ live-courier-tracking/
 
 | Topic | Approach |
 |-------|----------|
-| Auth | JWT (HS256), stateless |
-| BOLA | Ownership checks in the service layer |
+| Auth | JWT (HS256), stateless. Local demo: default secret in yaml / `.env` |
+| BOLA | Order detail/cancel: ownership. Courier location + STOMP topic: customer must have an active order with that courier |
+| WebSocket | Handshake origins = REST CORS allowlist. Subscribe only `/topic/courier-location.{id}` |
 | Roles | Registration is always `CUSTOMER` |
 | Passwords | BCrypt |
 | Soft delete | `deleted_at` + `@SQLRestriction` |
-| CORS | Allowlist (`app.cors.allowed-origins`) |
+| CORS | Allowlist (`app.cors.allowed-origins`) for REST and SockJS |
 | Actuator | `/actuator/health` public; other actuator endpoints not exposed |
+| Out of scope | Rate limit, HTTPS, token revocation — local Compose demo, not a hosted product |
 
 ---
 

@@ -31,8 +31,11 @@ public class CourierController {
 
     @GetMapping("/{id}/location")
     @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
-    public ResponseEntity<CourierLocationResponse> getCourierLocation(@PathVariable Long id) {
-        CourierLocationResponse response = courierProfileService.getLocationById(id);
+    public ResponseEntity<CourierLocationResponse> getCourierLocation(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        CourierLocationResponse response = courierProfileService.getLocationById(id, principal);
         return ResponseEntity.ok(response);
     }
 

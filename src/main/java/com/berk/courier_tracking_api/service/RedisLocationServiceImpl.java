@@ -73,7 +73,7 @@ public class RedisLocationServiceImpl implements RedisLocationService {
             return courierIds;
 
         } catch (Exception e) {
-            log.warn("Redis GEO arama hatası: {}. Haversine fallback kullanılacak.", e.getMessage());
+            log.warn("Redis GEO arama hatası: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

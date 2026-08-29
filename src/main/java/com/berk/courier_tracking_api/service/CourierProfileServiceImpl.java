@@ -3,14 +3,17 @@ package com.berk.courier_tracking_api.service;
 import com.berk.courier_tracking_api.dto.CourierLocationResponse;
 import com.berk.courier_tracking_api.dto.LocationUpdateRequest;
 import com.berk.courier_tracking_api.entity.CourierProfile;
+import com.berk.courier_tracking_api.enums.OrderStatus;
+import com.berk.courier_tracking_api.enums.UserRole;
 import com.berk.courier_tracking_api.exception.ResourceNotFoundException;
 import com.berk.courier_tracking_api.repository.CourierProfileRepository;
+import com.berk.courier_tracking_api.repository.OrderRepository;
+import com.berk.courier_tracking_api.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.berk.courier_tracking_api.service.RedisLocationService;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 public class CourierProfileServiceImpl implements CourierProfileService {
 
     private final CourierProfileRepository courierProfileRepository;
+    private final OrderRepository orderRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final RedisLocationService redisLocationService;
 
@@ -56,7 +60,13 @@ public class CourierProfileServiceImpl implements CourierProfileService {
     }
 
     @Override
-    public CourierLocationResponse getLocationById(Long courierId) {
+    public CourierLocationResponse getLocationById(Long courierId, UserPrincipal principal) {
+        if (principal.getRole() == UserRole.CUSTOMER
+                && !orderRepository.existsByCustomer_IdAndCourier_IdAndStatusIn(
+                principal.getId(), courierId, OrderStatus.liveTracking())) {
+            throw new AccessDeniedException("Bu kuryenin konumunu görme yetkiniz yok");
+        }
+
         CourierProfile courier = courierProfileRepository.findById(courierId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Kurye profili bulunamadı, id: " + courierId));

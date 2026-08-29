@@ -5,14 +5,18 @@ import com.berk.courier_tracking_api.dto.LocationUpdateRequest;
 import com.berk.courier_tracking_api.entity.CourierProfile;
 import com.berk.courier_tracking_api.entity.User;
 import com.berk.courier_tracking_api.enums.CourierStatus;
+import com.berk.courier_tracking_api.enums.UserRole;
 import com.berk.courier_tracking_api.exception.ResourceNotFoundException;
 import com.berk.courier_tracking_api.repository.CourierProfileRepository;
+import com.berk.courier_tracking_api.repository.OrderRepository;
+import com.berk.courier_tracking_api.security.UserPrincipal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 
@@ -30,6 +34,9 @@ class CourierProfileServiceImplTest {
 
     @Mock
     private CourierProfileRepository courierProfileRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @Mock
     private SimpMessagingTemplate messagingTemplate;
@@ -80,22 +87,55 @@ class CourierProfileServiceImplTest {
                 () -> courierProfileService.updateLocation(99L, new LocationUpdateRequest(1.0, 1.0)));
     }
 
+    private UserPrincipal principal(UserRole role, Long userId) {
+        User user = new User();
+        user.setId(userId);
+        user.setEmail("user" + userId + "@example.com");
+        user.setFullName("Test");
+        user.setRole(role);
+        return UserPrincipal.from(user);
+    }
+
     @Test
-    void getLocationById_whenCourierExists_shouldReturnResponse() {
+    void getLocationById_whenAdmin_shouldReturnResponse() {
         CourierProfile courier = buildCourier(5L, 50L, "Test Kurye");
         when(courierProfileRepository.findById(5L)).thenReturn(Optional.of(courier));
 
-        CourierLocationResponse response = courierProfileService.getLocationById(5L);
+        CourierLocationResponse response = courierProfileService.getLocationById(5L, principal(UserRole.ADMIN, 99L));
 
         assertEquals(5L, response.courierId());
         assertEquals("Test Kurye", response.fullName());
     }
 
     @Test
+    void getLocationById_whenCustomerHasActiveOrder_shouldReturnResponse() {
+        CourierProfile courier = buildCourier(5L, 50L, "Test Kurye");
+        UserPrincipal customer = principal(UserRole.CUSTOMER, 1L);
+        when(orderRepository.existsByCustomer_IdAndCourier_IdAndStatusIn(
+                eq(1L), eq(5L), any())).thenReturn(true);
+        when(courierProfileRepository.findById(5L)).thenReturn(Optional.of(courier));
+
+        CourierLocationResponse response = courierProfileService.getLocationById(5L, customer);
+
+        assertEquals(5L, response.courierId());
+    }
+
+    @Test
+    void getLocationById_whenCustomerHasNoActiveOrder_shouldThrowAccessDenied() {
+        UserPrincipal customer = principal(UserRole.CUSTOMER, 1L);
+        when(orderRepository.existsByCustomer_IdAndCourier_IdAndStatusIn(
+                eq(1L), eq(5L), any())).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class,
+                () -> courierProfileService.getLocationById(5L, customer));
+    }
+
+    @Test
     void getLocationById_whenCourierNotFound_shouldThrowResourceNotFoundException() {
         when(courierProfileRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> courierProfileService.getLocationById(1L));
+        assertThrows(ResourceNotFoundException.class,
+                () -> courierProfileService.getLocationById(1L, principal(UserRole.ADMIN, 99L)));
     }
 
     @Test

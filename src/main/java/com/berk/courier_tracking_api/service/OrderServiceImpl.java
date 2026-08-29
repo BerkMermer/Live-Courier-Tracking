@@ -15,14 +15,11 @@ import com.berk.courier_tracking_api.repository.CourierProfileRepository;
 import com.berk.courier_tracking_api.repository.OrderRepository;
 import com.berk.courier_tracking_api.repository.UserRepository;
 import com.berk.courier_tracking_api.security.UserPrincipal;
-import com.berk.courier_tracking_api.service.RedisLocationService;
-import com.berk.courier_tracking_api.util.HaversineUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -112,7 +109,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER);
         }
 
-        // Redis GEO first (nearest by distance); Haversine fallback if Redis empty/unavailable or no intersection.
         CourierProfile selectedCourier = findNearestAvailableCourier(
                 order.getPickupLatitude(),
                 order.getPickupLongitude(),
@@ -142,18 +138,8 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        return availableCouriers.stream()
-                .filter(courier -> courier.getLastKnownLat() != null
-                        && courier.getLastKnownLng() != null)
-                .min(Comparator.comparingDouble(courier ->
-                        HaversineUtility.calculateDistanceKm(
-                                pickupLatitude,
-                                pickupLongitude,
-                                courier.getLastKnownLat(),
-                                courier.getLastKnownLng()
-                        )))
-                .orElseThrow(() -> new BusinessException(ErrorCode.NO_AVAILABLE_COURIER,
-                        "Konum bilgisi olan müsait kurye bulunmamaktadır"));
+        throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER,
+                "Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)");
     }
 
     private Order findOrderOrThrow(Long orderId) {

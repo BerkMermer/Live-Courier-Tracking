@@ -11,6 +11,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.List;
+
 /** STOMP over WebSocket with an external RabbitMQ broker relay for scalable location fan-out. */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -32,10 +34,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${rabbitmq.passcode}")
     private String relayPasscode;
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-courier")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(allowedOrigins.toArray(String[]::new))
                 .withSockJS();
     }
 

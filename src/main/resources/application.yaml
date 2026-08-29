@@ -45,6 +45,7 @@ management:
       enabled: true
 
 jwt:
+  # Local/demo fallback only — set JWT_SECRET in .env for anything beyond localhost
   secret: ${JWT_SECRET:c2VjcmV0S2V5Rm9yRGV2ZWxvcG1lbnRPbmx5MzJieXRlcw==}
   expiration: ${JWT_EXPIRATION:86400000}
 
