@@ -65,15 +65,12 @@ A customer places an order, the nearest available courier is assigned, and the c
 
 ## Demo
 
-There is no hosted public URL. After [Quick Start](#quick-start), the live map (STOMP + courier movement) is at **http://localhost:3000**. Screenshots of that flow:
+There is no hosted public URL. After [Quick Start](#quick-start), the live map (STOMP + courier movement) is at **http://localhost:3000**.
 
-![Login](docs/screenshots/login.png)
-
-![Live tracking](docs/screenshots/live-tracking.png)
-
-![Order panel](docs/screenshots/order-panel.png)
-
-![Swagger UI](docs/screenshots/swagger.png)
+| Login & panel | Map & API |
+|---|---|
+| ![Login](docs/screenshots/login.png) | ![Live tracking](docs/screenshots/live-tracking.png) |
+| ![Order panel](docs/screenshots/order-panel.png) | ![Swagger UI](docs/screenshots/swagger.png) |
 
 ---
 
@@ -290,6 +287,8 @@ Educational / portfolio use. Contact the author before commercial use.
 
 ## Contact
 
-**Berk Mermer** · [GitHub](https://github.com/BerkMermer)
+**Berk Coşkun Mermer**
 
-[https://github.com/BerkMermer/live-courier-tracking](https://github.com/BerkMermer/live-courier-tracking)
+- GitHub: [BerkMermer](https://github.com/BerkMermer)
+- LinkedIn: [berkcoskunmermer](https://linkedin.com/in/berkcoskunmermer)
+- Project: [live-courier-tracking](https://github.com/BerkMermer/live-courier-tracking)
