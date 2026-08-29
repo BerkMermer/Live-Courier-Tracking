@@ -7,7 +7,13 @@ import com.berk.courier_tracking_api.entity.Order;
 import com.berk.courier_tracking_api.entity.User;
 import com.berk.courier_tracking_api.enums.CourierStatus;
 import com.berk.courier_tracking_api.enums.OrderStatus;
+import com.berk.courier_tracking_api.enums.UserRole;
+import com.berk.courier_tracking_api.exception.BusinessException;
+import com.berk.courier_tracking_api.exception.ErrorCode;
 import com.berk.courier_tracking_api.repository.CourierProfileRepository;
+import com.berk.courier_tracking_api.repository.OrderRepository;
+import com.berk.courier_tracking_api.repository.UserRepository;
+import com.berk.courier_tracking_api.security.UserPrincipal;
 import com.berk.courier_tracking_api.repository.OrderRepository;
 import com.berk.courier_tracking_api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -130,6 +136,8 @@ class OrderServiceTest {
 
         User courierUser = new User();
         courierUser.setId(10L);
+        courierUser.setEmail("kurye@example.com");
+        courierUser.setRole(UserRole.COURIER);
         courierUser.setFullName("Ahmet Kurye");
 
         CourierProfile nearby = new CourierProfile();
@@ -173,5 +181,85 @@ class OrderServiceTest {
 
         assertEquals("Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)",
                 exception.getMessage());
+    }
+
+    @Test
+    void markPickedUp_whenAssignedToThisCourier_shouldSetPickedUp() {
+        User courierUser = new User();
+        courierUser.setId(10L);
+        courierUser.setEmail("kurye@example.com");
+        courierUser.setRole(UserRole.COURIER);
+        CourierProfile profile = new CourierProfile();
+        profile.setId(7L);
+        profile.setUser(courierUser);
+        profile.setStatus(CourierStatus.ON_DELIVERY);
+
+        User customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Demo");
+
+        Order order = new Order();
+        order.setId(42L);
+        order.setCustomer(customer);
+        order.setCourier(profile);
+        order.setStatus(OrderStatus.ASSIGNED);
+
+        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.markPickedUp(42L, UserPrincipal.from(courierUser));
+
+        assertEquals(OrderStatus.PICKED_UP, response.status());
+    }
+
+    @Test
+    void markDelivered_whenPickedUpByThisCourier_shouldSetDeliveredAndAvailable() {
+        User courierUser = new User();
+        courierUser.setId(10L);
+        courierUser.setEmail("kurye@example.com");
+        courierUser.setRole(UserRole.COURIER);
+        CourierProfile profile = new CourierProfile();
+        profile.setId(7L);
+        profile.setUser(courierUser);
+        profile.setStatus(CourierStatus.ON_DELIVERY);
+
+        User customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Demo");
+
+        Order order = new Order();
+        order.setId(42L);
+        order.setCustomer(customer);
+        order.setCourier(profile);
+        order.setStatus(OrderStatus.PICKED_UP);
+
+        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.markDelivered(42L, UserPrincipal.from(courierUser));
+
+        assertEquals(OrderStatus.DELIVERED, response.status());
+        assertEquals(CourierStatus.AVAILABLE, profile.getStatus());
+    }
+
+    @Test
+    void markPickedUp_whenWrongStatus_shouldThrow() {
+        User courierUser = new User();
+        courierUser.setId(10L);
+        courierUser.setEmail("kurye@example.com");
+        courierUser.setRole(UserRole.COURIER);
+        CourierProfile profile = new CourierProfile();
+        profile.setUser(courierUser);
+
+        Order order = new Order();
+        order.setId(42L);
+        order.setCourier(profile);
+        order.setStatus(OrderStatus.PENDING);
+
+        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> orderService.markPickedUp(42L, UserPrincipal.from(courierUser)));
+        assertEquals(ErrorCode.ORDER_NOT_PICKABLE, ex.getErrorCode());
     }
 }

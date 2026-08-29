@@ -1,6 +1,7 @@
 package com.berk.courier_tracking_api.controller;
 
 import com.berk.courier_tracking_api.dto.AuthResponse;
+import com.berk.courier_tracking_api.dto.CourierRegisterRequest;
 import com.berk.courier_tracking_api.dto.UserLoginRequest;
 import com.berk.courier_tracking_api.dto.UserRegisterRequest;
 import com.berk.courier_tracking_api.service.UserService;
@@ -23,6 +24,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody UserRegisterRequest request) {
         AuthResponse response = userService.registerUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/register-courier")
+    public ResponseEntity<AuthResponse> registerCourier(@Valid @RequestBody CourierRegisterRequest request) {
+        AuthResponse response = userService.registerCourier(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

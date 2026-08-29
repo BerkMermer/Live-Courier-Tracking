@@ -1,12 +1,16 @@
 package com.berk.courier_tracking_api.service;
 
 import com.berk.courier_tracking_api.dto.AuthResponse;
+import com.berk.courier_tracking_api.dto.CourierRegisterRequest;
 import com.berk.courier_tracking_api.dto.UserLoginRequest;
 import com.berk.courier_tracking_api.dto.UserRegisterRequest;
+import com.berk.courier_tracking_api.entity.CourierProfile;
 import com.berk.courier_tracking_api.entity.User;
+import com.berk.courier_tracking_api.enums.CourierStatus;
 import com.berk.courier_tracking_api.enums.UserRole;
 import com.berk.courier_tracking_api.exception.BusinessException;
 import com.berk.courier_tracking_api.exception.ErrorCode;
+import com.berk.courier_tracking_api.repository.CourierProfileRepository;
 import com.berk.courier_tracking_api.repository.UserRepository;
 import com.berk.courier_tracking_api.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -33,6 +37,9 @@ class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CourierProfileRepository courierProfileRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -68,6 +75,31 @@ class UserServiceImplTest {
         verify(userRepository).save(userCaptor.capture());
         assertEquals("hashed-password", userCaptor.getValue().getPasswordHash());
         assertEquals(UserRole.CUSTOMER, userCaptor.getValue().getRole());
+    }
+
+    @Test
+    void registerCourier_whenEmailNotRegistered_shouldPersistCourierProfileAndReturnJwt() {
+        CourierRegisterRequest request = new CourierRegisterRequest(
+                "Ahmet Kurye", "kurye@example.com", "+905559998877", "securePass123", "34 ABC 123");
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByPhoneNumber(request.phoneNumber())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashed-password");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User user = inv.getArgument(0);
+            user.setId(2L);
+            return user;
+        });
+        when(courierProfileRepository.save(any(CourierProfile.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jwtService.generateToken(any(UserDetails.class))).thenReturn("jwt-token");
+
+        AuthResponse response = userService.registerCourier(request);
+
+        assertEquals(UserRole.COURIER, response.user().role());
+        ArgumentCaptor<CourierProfile> profileCaptor = ArgumentCaptor.forClass(CourierProfile.class);
+        verify(courierProfileRepository).save(profileCaptor.capture());
+        assertEquals(CourierStatus.AVAILABLE, profileCaptor.getValue().getStatus());
+        assertEquals("34 ABC 123", profileCaptor.getValue().getVehiclePlate());
     }
 
     @Test

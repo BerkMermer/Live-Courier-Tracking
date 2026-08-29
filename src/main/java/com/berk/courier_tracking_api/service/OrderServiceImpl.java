@@ -125,6 +125,37 @@ public class OrderServiceImpl implements OrderService {
         return OrderResponse.from(updatedOrder);
     }
 
+    @Override
+    @Transactional
+    public OrderResponse markPickedUp(Long orderId, UserPrincipal principal) {
+        Order order = findOrderOrThrow(orderId);
+        validateCourierAssignment(order, principal);
+
+        if (order.getStatus() != OrderStatus.ASSIGNED) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PICKABLE,
+                    "Alış yalnızca ASSIGNED siparişte yapılır, mevcut durum: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.PICKED_UP);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markDelivered(Long orderId, UserPrincipal principal) {
+        Order order = findOrderOrThrow(orderId);
+        validateCourierAssignment(order, principal);
+
+        if (order.getStatus() != OrderStatus.PICKED_UP) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_DELIVERABLE,
+                    "Teslim yalnızca PICKED_UP siparişte yapılır, mevcut durum: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.DELIVERED);
+        order.getCourier().setStatus(CourierStatus.AVAILABLE);
+        return OrderResponse.from(orderRepository.save(order));
+    }
+
     private CourierProfile findNearestAvailableCourier(double pickupLatitude, double pickupLongitude, List<CourierProfile> availableCouriers) {
         Map<Long, CourierProfile> availableById = availableCouriers.stream()
                 .collect(Collectors.toMap(CourierProfile::getId, Function.identity()));
