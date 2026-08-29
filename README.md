@@ -1,175 +1,265 @@
-# Courier Tracking API
+<div align="center">
 
-> Gerçek zamanlı kurye konum takibi, Redis GEO ile akıllı atama ve STOMP ile canlı izleme.  
-> **Staj / portfolio demosu** — production ürünü değil; bilinçli olarak dar tutulmuş bir öğrenme projesidir.
+# Live Courier Tracking
 
-[![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.7-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-red?logo=redis)](https://redis.io/)
-[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-STOMP-FF6600?logo=rabbitmq)](https://www.rabbitmq.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Kustomize-326CE5?logo=kubernetes)](https://kubernetes.io/)
+**Real-time courier location tracking, Redis GEO assignment, and live map updates over STOMP.**
+
+Internship / portfolio demo — intentionally scoped, not a production product.
+
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.7-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-STOMP-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Kustomize-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+
+[Live Demo Flow](#usage) · [API Reference](#api-reference) · [Report Bug](https://github.com/BerkMermer/live-courier-tracking/issues)
+
+</div>
 
 ---
 
-## İçindekiler
+## Table of Contents
 
-- [Proje Hakkında](#proje-hakkında)
-- [Sistem Mimarisi](#sistem-mimarisi)
-- [Teknoloji Stack](#teknoloji-stack)
-- [Özellikler](#özellikler)
-- [API Endpoint’leri](#api-endpointleri)
-- [Kurulum (Docker)](#kurulum-docker)
-- [Kubernetes](#kubernetes)
-- [Kullanım](#kullanım)
+- [About The Project](#about-the-project)
+- [Architecture](#architecture)
+- [Built With](#built-with)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [API Reference](#api-reference)
 - [Frontend](#frontend)
-- [Proje Yapısı](#proje-yapısı)
-- [Güvenlik](#güvenlik)
-- [Test](#test)
-- [Geliştirici](#geliştirici)
-- [Lisans](#lisans)
+- [Kubernetes](#kubernetes)
+- [Project Structure](#project-structure)
+- [Security](#security)
+- [Testing](#testing)
+- [License](#license)
+- [Contact](#contact)
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Proje Hakkında
+## About The Project
 
-Courier Tracking API; müşterinin sipariş oluşturduğu, en yakın müsait kuryenin atandığı ve kurye konumunun WebSocket üzerinden canlı izlendiği bir **REST + realtime** backend demosudur. Küçük bir React paneli ile haritada takip gösterilir.
+Courier Tracking is a **REST + realtime** backend with a small React panel. A customer places an order, the nearest available courier is assigned, and the courier’s location is streamed to the map over WebSocket.
 
-**Temel yetenekler**
+| | |
+|---|---|
+| **Auth** | JWT with roles `CUSTOMER`, `COURIER`, `ADMIN` |
+| **Assignment** | Redis GEO, with Haversine fallback when Redis is empty |
+| **Realtime** | RabbitMQ STOMP broker relay |
+| **Orders** | UUID `trackingNumber`, soft delete, ownership checks (BOLA mitigation) |
+| **Ops** | Docker Compose one-command stack, Kubernetes (Kustomize) with probes, Secret/ConfigMap, StatefulSet, Ingress, HPA |
 
-- JWT + roller: `CUSTOMER` / `COURIER` / `ADMIN`
-- Redis GEO + Haversine fallback ile yakın kurye atama
-- RabbitMQ STOMP relay ile konum yayını
-- Soft delete, UUID `trackingNumber`, sahiplik kontrolü (BOLA önlemi)
-- Docker Compose ile tek komutta stack
-- Kubernetes (Kustomize): probe, Secret/ConfigMap, StatefulSet, Ingress, HPA
+### Screenshots
 
-### Bilinçli kapsam dışı
+![Login](docs/screenshots/login.png)
 
-| Konu | Not |
-|------|-----|
-| Misafir sipariş | Auth zorunlu |
-| Kurye self-register | Seed / SQL ile `COURIER` |
-| AI chat | Kaldırıldı |
-| Ödeme, push, admin paneli | Ürün kapsamı dışı |
+![Live tracking](docs/screenshots/live-tracking.png)
+
+![Order panel](docs/screenshots/order-panel.png)
+
+![Swagger UI](docs/screenshots/swagger.png)
+
+### Out of scope
+
+| Topic | Note |
+|-------|------|
+| Guest checkout | Authentication is required |
+| Courier self-registration | Courier accounts come from seed / SQL |
+| Payments, push notifications, admin UI | Product scope, not part of this demo |
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Sistem Mimarisi
+## Architecture
 
-![Sistem mimarisi](docs/architecture.png)
+![System architecture](docs/architecture.png)
 
-WebSocket konum topic’i (RabbitMQ nested `/` kabul etmez): `/topic/courier-location.{courierId}`
+Location updates are published on:
+
+```text
+/topic/courier-location.{courierId}
+```
+
+RabbitMQ’s nested STOMP destinations do not accept `/` in the topic path, so a `.` separator is used.
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Teknoloji Stack
+## Built With
 
-| Katman | Teknoloji |
-|--------|-----------|
+| Layer | Stack |
+|-------|--------|
 | Backend | Java 17, Spring Boot **4.0.7**, Spring Security + JWT, Spring Data JPA |
-| DB / cache | PostgreSQL 16, Flyway, Redis 7 (GEO) |
+| Database / cache | PostgreSQL 16, Flyway, Redis 7 (GEO) |
 | Realtime | STOMP WebSocket + SockJS, RabbitMQ (broker relay) |
 | API docs | SpringDoc OpenAPI (Swagger UI) |
-| Frontend | React, Vite, Tailwind, Leaflet + OSRM rota |
+| Frontend | React 18, Vite, Tailwind CSS, Leaflet + OSRM routing |
 | Test / ops | JUnit, Mockito, Testcontainers, Docker Compose, Kubernetes (Kustomize) |
 
----
-
-## Özellikler
-
-### Kimlik doğrulama
-
-- `POST /register`, `POST /login` → JWT
-- Kayıtta rol sabit: `CUSTOMER`
-- Endpoint’lerde `@PreAuthorize` + sahiplik kontrolü
-
-### Siparişler
-
-- Oluşturma, liste (`/me`), detay, iptal (`PENDING`)
-- UUID `trackingNumber`
-- `assign-courier`: en yakın `AVAILABLE` kurye
-
-### Kurye / konum
-
-- `PUT /couriers/location` → Postgres + Redis GEO + STOMP
-- Redis boşsa Haversine fallback
-
-### Frontend izleme
-
-- Yol rotası (OSRM), motor ikonu, mesafe / ETA
-- Aktif sipariş + sipariş geçmişi
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## API Endpoint’leri
+## Features
 
-### Auth — `/api/v1/auth`
+### Authentication
 
-| Method | Path | Yetki | Açıklama |
-|--------|------|-------|----------|
-| POST | `/register` | Public | Kayıt → JWT |
-| POST | `/login` | Public | Giriş → JWT |
+- `POST /register` and `POST /login` return a JWT
+- Public registration always creates a `CUSTOMER`
+- Endpoints use `@PreAuthorize` plus ownership checks in the service layer
 
-### Orders — `/api/v1/orders`
+### Orders
 
-| Method | Path | Yetki | Açıklama |
-|--------|------|-------|----------|
-| POST | `/` | CUSTOMER | Sipariş oluştur |
-| GET | `/me` | CUSTOMER | Kendi siparişleri |
-| GET | `/{orderId}` | CUSTOMER / COURIER / ADMIN | Detay (sahiplik) |
-| POST | `/{orderId}/cancel` | CUSTOMER | İptal |
-| POST | `/{orderId}/assign-courier` | ADMIN / COURIER | En yakın kurye |
+- Create, list (`/me`), detail, and cancel (`PENDING` only)
+- UUID `trackingNumber` on every order
+- `assign-courier` picks the nearest `AVAILABLE` courier
 
-### Couriers — `/api/v1/couriers`
+### Courier location
 
-| Method | Path | Yetki | Açıklama |
-|--------|------|-------|----------|
-| PUT | `/location` | COURIER | Konum güncelle |
-| GET | `/{id}/location` | CUSTOMER / ADMIN | Konum getir |
-| GET | `/me/location` | COURIER | Kendi konumu |
+- `PUT /couriers/location` writes to PostgreSQL, Redis GEO, and STOMP
+- If Redis has no GEO data, assignment falls back to Haversine
 
-> Swagger: http://localhost:8080/swagger-ui.html — Authorize: `Bearer <JWT>`
+### Live map
+
+- Road route via OSRM, motorcycle marker, remaining distance and ETA
+- Active order plus order history
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Kurulum (Docker)
+## Getting Started
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- Git
+
+For local Maven tests without Compose: JDK 17.
+
+### Installation (Docker Compose)
 
 ```bash
-git clone https://github.com/BerkMermer/Live-Courier-Tracking.git
-cd Live-Courier-Tracking
+git clone https://github.com/BerkMermer/live-courier-tracking.git
+cd live-courier-tracking
 
 cp .env.example .env
-# .env içinde POSTGRES_PASSWORD ve JWT_SECRET doldurun
-# Windows'ta 61613 çakışırsa: RABBITMQ_STOMP_PORT=62613
+```
 
+Edit `.env` and set `POSTGRES_PASSWORD` and `JWT_SECRET`. Generate a secret with:
+
+```bash
+openssl rand -base64 32
+```
+
+On Windows, if host port **61613** is already taken, set `RABBITMQ_STOMP_PORT=62613` in `.env`.
+
+```bash
 docker compose up --build -d
 ```
 
-| Servis | URL |
-|--------|-----|
+| Service | URL |
+|---------|-----|
 | API | http://localhost:8080 |
-| Swagger | http://localhost:8080/swagger-ui.html |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
 | Frontend | http://localhost:3000 |
-| RabbitMQ UI | http://localhost:15672 |
+| RabbitMQ Management | http://localhost:15672 |
 
 ```bash
 docker compose logs -f app
 docker compose down
 ```
 
-> `.env` dosyasını **asla** commit etmeyin (`.gitignore`’da). GitHub’a yalnızca `.env.example` gider.
+Do not commit `.env`. Only `.env.example` belongs in the repository.
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
+---
+
+## Usage
+
+### Swagger demo flow
+
+1. `POST /api/v1/auth/register` — create a customer
+2. `POST /api/v1/auth/login` — copy the JWT, then **Authorize** in Swagger (`Bearer <token>`)
+3. `POST /api/v1/orders` — create an order with pickup lat/lng
+4. With a courier JWT, `PUT /api/v1/couriers/location`
+5. `POST /api/v1/orders/{id}/assign-courier`
+6. Open http://localhost:3000 and watch the map
+
+Courier accounts are seeded. There is no public courier-register endpoint.
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
+---
+
+## API Reference
+
+Interactive docs: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+### Auth — `/api/v1/auth`
+
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| POST | `/register` | Public | Register and return JWT |
+| POST | `/login` | Public | Login and return JWT |
+
+### Orders — `/api/v1/orders`
+
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| POST | `/` | CUSTOMER | Create order |
+| GET | `/me` | CUSTOMER | List own orders |
+| GET | `/{orderId}` | CUSTOMER / COURIER / ADMIN | Order detail (ownership enforced) |
+| POST | `/{orderId}/cancel` | CUSTOMER | Cancel order |
+| POST | `/{orderId}/assign-courier` | ADMIN / COURIER | Assign nearest courier |
+
+### Couriers — `/api/v1/couriers`
+
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| PUT | `/location` | COURIER | Update location |
+| GET | `/{id}/location` | CUSTOMER / ADMIN | Get courier location |
+| GET | `/me/location` | COURIER | Get own location |
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
+---
+
+## Frontend
+
+React + Leaflet live tracking panel, served on `:3000` with Compose.
+
+- CARTO Voyager basemap and OSRM road routing
+- Motorcycle icon, pickup marker, distance / ETA
+- Order history via `GET /orders/me`
+
+Run the UI locally without Compose:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
 ## Kubernetes
 
-Günlük geliştirme için Compose yeter. Staj / portföy tarafında asıl kazanç Kubernetes: servis keşfi, probe, Secret, kalıcı volume, Ingress ve HPA.
+Compose is enough for day-to-day development. The Kubernetes overlay is the portfolio piece: service discovery, probes, Secrets, persistent volumes, Ingress, and HPA.
 
-Yerel overlay (`k8s/overlays/local`) Docker Desktop Kubernetes veya kind içindir. Image’lar registry’ye push edilmez; `courier-tracking-api:local` ve `courier-tracking-frontend:local` olarak cluster’a yüklenir.
+The local overlay (`k8s/overlays/local`) targets Docker Desktop Kubernetes or kind. Images are not pushed to a registry; they are loaded as `courier-tracking-api:local` and `courier-tracking-frontend:local`.
 
-```
+```text
 Ingress / NodePort
         │
         ▼
@@ -180,9 +270,9 @@ Ingress / NodePort
                                postgres (STS+PVC)           redis                  rabbitmq (STOMP)
 ```
 
-Frontend production image same-origin proxy kullanır; tarayıcı `localhost:8080`’e gitmez. API `GET /actuator/health/liveness|readiness` ile ayağa kalkmayı bekler.
+The production frontend image proxies same-origin; the browser does not call `localhost:8080` directly. The API waits on `GET /actuator/health/liveness` and `GET /actuator/health/readiness`.
 
-### Windows (Docker Desktop) — önerilen
+### Windows (Docker Desktop)
 
 1. Docker Desktop → Settings → Kubernetes → **Enable Kubernetes** → Apply.
 2. PowerShell:
@@ -192,29 +282,34 @@ cd "c:\Users\Berk Mermer\Desktop\Projects\courier-tracking-api"
 .\scripts\k8s-deploy.ps1
 ```
 
-| Servis | URL |
-|--------|-----|
+| Service | URL |
+|---------|-----|
 | Frontend | http://localhost:30080 |
 | Swagger | http://localhost:30808/swagger-ui.html |
 | Health | http://localhost:30808/actuator/health |
 
-NodePort tarayıcıda açılmazsa:
+If NodePort does not open in the browser:
 
 ```powershell
 kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
 ```
 
-Sonra http://127.0.0.1:18080
+Then open http://127.0.0.1:18080
 
-### kind (opsiyonel)
+### kind (optional)
 
 ```powershell
 .\scripts\k8s-deploy.ps1 -Kind
 ```
 
-Linux / macOS: `chmod +x scripts/k8s-deploy.sh && ./scripts/k8s-deploy.sh` (`--kind` ile kind).
+Linux / macOS:
 
-### Elle uygulamak
+```bash
+chmod +x scripts/k8s-deploy.sh
+./scripts/k8s-deploy.sh          # add --kind for kind
+```
+
+### Apply by hand
 
 ```bash
 docker build -t courier-tracking-api:local .
@@ -223,127 +318,87 @@ kubectl apply -k k8s/overlays/local
 kubectl -n courier-tracking get pods,svc
 ```
 
-### Ne var, neden var
+### What is in the overlay, and why
 
-| Parça | Neden |
-|-------|--------|
-| Namespace `courier-tracking` | Diğer local workload’lardan ayrışır |
-| ConfigMap / Secret | Non-secret config vs şifre/JWT ayrımı |
-| Postgres StatefulSet + PVC | DB için kimlik + disk |
-| Redis / RabbitMQ Deployment | GEO index ve STOMP relay |
-| Init container | API, 5432 / 6379 / 61613 hazır olmadan start etmez |
-| startup / liveness / readiness | Spring Actuator probe |
-| Ingress + NodePort | Cluster içi HTTP ve local tarayıcı |
-| HPA (CPU %70, 1–3 replica) | metrics-server yoksa ölçeklenmez, obje durur |
+| Piece | Role |
+|-------|------|
+| Namespace `courier-tracking` | Isolates from other local workloads |
+| ConfigMap / Secret | Non-secret config vs passwords / JWT |
+| Postgres StatefulSet + PVC | Stable identity and disk for the database |
+| Redis / RabbitMQ Deployment | GEO index and STOMP relay |
+| Init container | API does not start until 5432 / 6379 / 61613 are ready |
+| startup / liveness / readiness | Spring Actuator probes |
+| Ingress + NodePort | In-cluster HTTP and local browser access |
+| HPA (CPU 70%, 1–3 replicas) | Object exists; it does not scale without metrics-server |
 
-`k8s/base/secret.yaml` **sadece local**. Gerçek cluster’da:
+`k8s/base/secret.yaml` is **local only**. On a real cluster:
 
 ```bash
 kubectl -n courier-tracking create secret generic courier-secrets --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-`JWT_SECRET` Base64 ve en az 32 byte olmalı (`openssl rand -base64 32`).
+`JWT_SECRET` must be Base64 and at least 32 bytes (`openssl rand -base64 32`).
 
-### Docker Desktop kind modu (sık takılan yer)
+### Docker Desktop kind mode
 
-Docker Desktop, Kubernetes'i iki şekilde kurabiliyor (Settings → Kubernetes → *Cluster settings*):
+Docker Desktop can install Kubernetes in two ways (Settings → Kubernetes → Cluster settings):
 
-| Mod | Node adı | Yerel imaj davranışı |
-|-----|----------|----------------------|
-| **kind** (yeni varsayılan) | `desktop-control-plane` | `docker build` imajları cluster'a **görünmez** |
-| **Kubeadm** | `docker-desktop` | Yerel imajlar doğrudan kullanılır |
+| Mode | Node name | Local image behavior |
+|------|-----------|----------------------|
+| **kind** (current default) | `desktop-control-plane` | Images from `docker build` are **not** visible to the cluster |
+| **Kubeadm** | `docker-desktop` | Local images are used directly |
 
-kind modundaysan `ErrImageNeverPull` / `ErrImagePull` alırsın. Deploy script'i node'u tespit edip imajı kendisi aktarır; elle yapmak istersen:
+In kind mode you get `ErrImageNeverPull` / `ErrImagePull`. The deploy script detects the node and loads the image. To do it manually:
 
 ```powershell
-# Node container'ı görünür olmalı:
+# Node container must be visible:
 # Settings > Kubernetes > Show system containers (advanced) > Apply
 docker save courier-tracking-api:local -o api.tar
 docker cp api.tar desktop-control-plane:/api.tar
 docker exec desktop-control-plane ctr -n k8s.io images import /api.tar
 ```
 
-`docker save ... | docker exec -i ... ctr images import -` şeklinde **pipe kullanma**; PowerShell binary akışı bozar (`archive/tar: invalid tar header`).
+Do **not** pipe `docker save ... | docker exec -i ... ctr images import -` in PowerShell; the binary stream is corrupted (`archive/tar: invalid tar header`).
 
-Aynı modda NodePort host'a yayınlanmaz (`localhost:30080` bağlanmaz). Port-forward kullan:
+In the same mode, NodePort is not published on the host (`localhost:30080` does not connect). Use port-forward:
 
 ```powershell
 kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
 ```
 
-Yerel HTTP registry (`localhost:5000`) bu modda işe yaramaz: çekme istekleri Docker Desktop'ın `registry-mirror`'ından geçer ve `500 Internal Server Error` döner.
+A local HTTP registry (`localhost:5000`) also fails in this mode: pulls go through Docker Desktop’s `registry-mirror` and return `500 Internal Server Error`.
 
-### İlk kullanıcı
+### First user
 
-Cluster'daki Postgres boş başlar; Flyway sadece şemayı kurar, kullanıcı eklemez. Panelde giriş yapabilmek için önce kayıt ol:
+Cluster Postgres starts empty. Flyway creates the schema only — no users. Register before logging into the panel:
 
 ```powershell
 $b = @{ fullName="Berk Mermer"; email="berk@example.com"; phoneNumber="+905551112233"; password="securePass123" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:18080/api/v1/auth/register -ContentType "application/json" -Body $b
 ```
 
-`curl.exe` ile `-d "{\"...\"}"` denemeyin; PowerShell 5.1 tırnakları bozar ve `JSON parse error` alırsınız.
+Do not use `curl.exe` with `-d "{\"...\"}"` on PowerShell 5.1; quoting breaks and you get `JSON parse error`.
 
-### Temizlik
+### Teardown
 
 ```powershell
 kubectl delete -k k8s/overlays/local
-# kind kullandıysan: kind delete cluster --name courier
+# if you used kind: kind delete cluster --name courier
 ```
 
----
-## Kullanım
-
-### Swagger demo akışı
-
-1. `POST /api/v1/auth/register` — müşteri  
-2. `POST /api/v1/auth/login` — JWT al → Authorize  
-3. `POST /api/v1/orders` — pickup lat/lng ile sipariş  
-4. Kurye JWT ile `PUT /api/v1/couriers/location`  
-5. `POST /api/v1/orders/{id}/assign-courier`  
-6. http://localhost:3000 üzerinde haritayı izle  
-
-> Kurye hesabı seed ile gelir; public courier-register yok.
-
-### Ekran görüntüleri
-
-![Giriş](docs/screenshots/login.png)
-
-![Canlı takip](docs/screenshots/live-tracking.png)
-
-![Sipariş paneli](docs/screenshots/order-panel.png)
-
-![Swagger](docs/screenshots/swagger.png)
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Frontend
+## Project Structure
 
-React + Leaflet canlı takip paneli (Compose ile `:3000`):
-
-- Açık harita (CARTO Voyager) + OSRM yol rotası  
-- Motor ikonu, alış noktası, mesafe / ETA  
-- Sipariş geçmişi (`GET /orders/me`)  
-
-Manuel:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
----
-
-## Proje Yapısı
-
-```
-Live-Courier-Tracking/
+```text
+live-courier-tracking/
 ├── src/main/java/com/berk/courier_tracking_api/
 │   ├── config/          # Redis, Swagger, WebSocket (RabbitMQ relay)
 │   ├── controller/      # Auth, Order, Courier
 │   ├── dto/ entity/ enums/ exception/ repository/
-│   ├── security/        # JWT filter, WS auth
+│   ├── security/        # JWT filter, WebSocket auth
 │   ├── service/         # Order, Courier, Redis GEO
 │   └── util/            # Haversine
 ├── src/main/resources/
@@ -363,37 +418,49 @@ Live-Courier-Tracking/
 └── README.md
 ```
 
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
 ---
 
-## Güvenlik
+## Security
 
-| Konu | Önlem |
-|------|--------|
+| Topic | Approach |
+|-------|----------|
 | Auth | JWT (HS256), stateless |
-| BOLA | Serviste sahiplik kontrolü |
-| Rol | Kayıtta sabit CUSTOMER |
-| Şifre | BCrypt |
+| BOLA | Ownership checks in the service layer |
+| Roles | Registration is always `CUSTOMER` |
+| Passwords | BCrypt |
 | Soft delete | `deleted_at` + `@SQLRestriction` |
 | CORS | Allowlist (`app.cors.allowed-origins`) |
-| Probe | `/actuator/health` public; diger actuator kapali |
+| Actuator | `/actuator/health` is public; other actuator endpoints are not exposed |
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
 
 ---
 
-## Test
+## Testing
 
 ```bash
 ./mvnw test      # Linux / macOS
 mvnw.cmd test    # Windows
 ```
 
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
 ---
 
-## Geliştirici
+## License
+
+Educational / portfolio use. Contact the author before any commercial use.
+
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
+
+---
+
+## Contact
 
 **Berk Mermer** · [GitHub](https://github.com/BerkMermer)
 
----
+Project: [https://github.com/BerkMermer/live-courier-tracking](https://github.com/BerkMermer/live-courier-tracking)
 
-## Lisans
-
-Eğitim / portfolyo amaçlıdır. Ticari kullanım için proje sahibine sorun.
+<p align="right">(<a href="#live-courier-tracking">back to top</a>)</p>
