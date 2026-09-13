@@ -3,14 +3,15 @@ import LiveMap from './components/LiveMap';
 import DashboardPanel from './components/DashboardPanel';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Client } from '@stomp/stompjs';
+import { ArrowRight, LockKeyhole, LogOut, Mail, MapPinned, RefreshCw } from 'lucide-react';
 import { formatKm } from './utils/geo';
 import { useRoadRoute } from './hooks/useRoadRoute';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? '' : 'http://localhost:8080');
 
 function App() {
-  const [email, setEmail] = useState('demo-153357@example.com');
-  const [password, setPassword] = useState('securePass123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [token, setToken] = useState(() => localStorage.getItem('cta_token') || '');
   const [orders, setOrders] = useState([]);
   const [selectedTracking, setSelectedTracking] = useState(null);
@@ -223,7 +224,7 @@ function App() {
           ? `${courierLocation.lat.toFixed(5)}, ${courierLocation.lng.toFixed(5)}`
           : null,
       lastUpdateLabel: courierLocation?.updatedAt
-        ? new Date(courierLocation.updatedAt).toLocaleTimeString('tr-TR', { hour12: false })
+        ? formatTimestamp(courierLocation.updatedAt)
         : null,
     };
   }, [
@@ -234,49 +235,104 @@ function App() {
 
   if (!token) {
     return (
-      <div className="min-h-screen w-full bg-gray-950 text-white flex items-center justify-center p-6">
-        <form
-          onSubmit={handleLogin}
-          className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-8 space-y-4 shadow-2xl"
-        >
-          <div>
-            <h1 className="text-2xl font-bold">Kurye Takip</h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Giriş yap; Swagger’dan attığın istekler burada canlı görünsün.
+      <div className="min-h-screen bg-slate-50 px-5 py-8 text-slate-900 sm:px-8 lg:grid lg:place-items-center">
+        <main className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.09)] lg:grid-cols-[0.9fr_1.1fr]">
+          <section className="hidden border-r border-blue-100 bg-blue-50 p-10 lg:flex lg:flex-col lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 text-sm font-semibold text-blue-800">
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white text-blue-700 ring-1 ring-blue-100">
+                  <MapPinned size={19} />
+                </span>
+                Kurye Takip
+              </div>
+              <h1 className="mt-16 max-w-sm text-4xl font-semibold leading-tight tracking-tight text-slate-950">
+                Teslimatınızı anlık olarak takip edin.
+              </h1>
+              <p className="mt-5 max-w-sm text-base leading-relaxed text-slate-600">
+                Kurye konumu, yol rotası ve tahmini varış süresi tek ekranda güvenle güncellenir.
+              </p>
+            </div>
+            <div className="mt-16 border-t border-blue-100 pt-6 text-sm text-slate-500">
+              Güvenli oturum <span aria-hidden>•</span> Canlı konum <span aria-hidden>•</span>{' '}
+              Güncel teslimat bilgisi
+            </div>
+          </section>
+
+          <form onSubmit={handleLogin} className="p-7 sm:p-10 lg:p-14">
+            <div className="flex items-center gap-2 text-sm font-semibold text-blue-800 lg:hidden">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <MapPinned size={19} />
+              </span>
+              Kurye Takip
+            </div>
+            <p className="mt-10 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 lg:mt-0">
+              Müşteri paneli
             </p>
-          </div>
-          <label className="block text-sm">
-            <span className="text-gray-400">Email</span>
-            <input
-              className="mt-1 w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-gray-400">Şifre</span>
-            <input
-              className="mt-1 w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              required
-            />
-          </label>
-          {loginError && <p className="text-sm text-rose-400">{loginError}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 py-2.5 font-semibold disabled:opacity-50"
-          >
-            {loading ? 'Giriş...' : 'Giriş yap'}
-          </button>
-          <p className="text-xs text-gray-500">
-            Demo müşteri: demo-153357@example.com / securePass123
-          </p>
-        </form>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Tekrar hoş geldiniz</h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+              Aktif siparişinizi ve kuryenizin canlı konumunu görüntülemek için giriş yapın.
+            </p>
+
+            <div className="mt-8 space-y-5">
+              <label className="block text-sm font-medium text-slate-700">
+                E-posta adresi
+                <span className="relative mt-2 block">
+                  <Mail
+                    size={17}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="ornek@email.com"
+                    required
+                  />
+                </span>
+              </label>
+
+              <label className="block text-sm font-medium text-slate-700">
+                Şifre
+                <span className="relative mt-2 block">
+                  <LockKeyhole
+                    size={17}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Şifrenizi girin"
+                    required
+                  />
+                </span>
+              </label>
+            </div>
+
+            {loginError && (
+              <p role="alert" className="mt-5 rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+                {loginError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+            >
+              {loading ? 'Giriş yapılıyor…' : 'Giriş yap'}
+              {!loading && <ArrowRight size={17} />}
+            </button>
+
+            <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+              Giriş bilgileriniz yalnızca güvenli oturum oluşturmak için kullanılır.
+            </p>
+          </form>
+        </main>
       </div>
     );
   }
@@ -288,6 +344,7 @@ function App() {
         status: order.status,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
+        createdAt: order.createdAt,
       }
     : {
         orderNo: '—',
@@ -295,18 +352,19 @@ function App() {
         status: 'YOK',
         pickupAddress: '—',
         deliveryAddress: '—',
+        createdAt: null,
       };
 
   const courierInfo = {
     id: order?.courierId ?? null,
     name: order?.courierName || courierLocation?.name || 'Atanmadı',
-    plate: order?.courierId ? 'Profil #' + order.courierId : '—',
-    phone: '—',
+    plate: order?.courierVehiclePlate || null,
+    phone: order?.courierPhoneMasked || null,
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 overflow-hidden text-white font-sans">
-      <div className="w-2/3 h-full relative">
+    <main className="flex min-h-screen w-full flex-col overflow-x-hidden bg-slate-100 font-sans text-slate-900 lg:h-screen lg:flex-row lg:overflow-hidden">
+      <div className="relative h-[48vh] min-h-[360px] w-full border-b border-slate-200 lg:h-full lg:min-h-0 lg:w-[65%] lg:border-b-0 lg:border-r">
         <LiveMap
           courierLocation={courierLocation}
           courierName={courierInfo.name}
@@ -319,22 +377,35 @@ function App() {
         />
       </div>
 
-      <div className="w-1/3 h-full p-5 flex flex-col gap-3 z-20 bg-[#f4f6f8] border-l border-slate-200 shadow-[-8px_0_24px_rgba(15,23,42,0.06)]">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={refreshOrders}
-            className="flex-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2 text-sm font-medium shadow-sm"
-          >
-            Yenile
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-sm font-medium"
-          >
-            Çıkış
-          </button>
+      <aside className="z-20 flex w-full flex-col gap-4 bg-slate-50 p-4 sm:p-5 lg:h-full lg:w-[35%] lg:min-w-[390px] lg:max-w-[560px]">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-600 text-white">
+              <MapPinned size={19} />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-950">Kurye Takip</p>
+              <p className="truncate text-xs text-slate-500">Canlı teslimat merkezi</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={refreshOrders}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <RefreshCw size={14} />
+              <span className="hidden sm:inline">Yenile</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Çıkış</span>
+            </button>
+          </div>
         </div>
         <DashboardPanel
           order={orderInfo}
@@ -344,10 +415,26 @@ function App() {
           courier={courierInfo}
           wsConnected={wsConnected}
           lastUpdateLabel={trackingMetrics.lastUpdateLabel}
+          distanceLabel={trackingMetrics.distanceLabel}
+          etaLabel={trackingMetrics.etaLabel}
         />
-      </div>
-    </div>
+      </aside>
+    </main>
   );
+}
+
+function formatTimestamp(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('tr-TR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
 }
 
 export default App;

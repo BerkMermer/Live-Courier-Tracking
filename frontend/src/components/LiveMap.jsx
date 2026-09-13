@@ -6,11 +6,10 @@ import { useEffect, useRef } from 'react';
 const motoIcon = L.divIcon({
   className: 'courier-moto-marker',
   html: `
-    <div class="moto-pulse"></div>
     <div class="moto-badge" title="Kurye">
-      <svg viewBox="0 0 64 64" width="34" height="34" aria-hidden="true">
-        <circle cx="32" cy="32" r="30" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
-        <g fill="none" stroke="#f8fafc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 64 64" width="31" height="31" aria-hidden="true">
+        <circle cx="32" cy="32" r="29" fill="#ffffff" stroke="#2563eb" stroke-width="3"/>
+        <g fill="none" stroke="#1e3a5f" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="42" r="7"/>
           <circle cx="46" cy="42" r="7"/>
           <path d="M25 42h10l6-10h8"/>
@@ -18,14 +17,14 @@ const motoIcon = L.divIcon({
           <path d="M27 24h10l4 8"/>
           <path d="M40 24h6"/>
         </g>
-        <circle cx="18" cy="42" r="2.5" fill="#38bdf8"/>
-        <circle cx="46" cy="42" r="2.5" fill="#38bdf8"/>
+        <circle cx="18" cy="42" r="2.5" fill="#2563eb"/>
+        <circle cx="46" cy="42" r="2.5" fill="#2563eb"/>
       </svg>
     </div>
   `,
-  iconSize: [52, 52],
-  iconAnchor: [26, 26],
-  popupAnchor: [0, -22],
+  iconSize: [44, 44],
+  iconAnchor: [22, 22],
+  popupAnchor: [0, -20],
 });
 
 const pickupIcon = L.divIcon({
@@ -129,9 +128,9 @@ const LiveMap = ({
           <Polyline
             positions={routePositions}
             pathOptions={{
-              color: '#0284c7',
-              weight: 5,
-              opacity: 0.88,
+              color: '#2563eb',
+              weight: 4,
+              opacity: 0.9,
               lineCap: 'round',
               lineJoin: 'round',
             }}
@@ -146,30 +145,28 @@ const LiveMap = ({
 
       <div className="pointer-events-none absolute left-4 top-4 z-[500] flex flex-col gap-2">
         <div
-          className={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-md ${
-            live
-              ? 'bg-emerald-600/95 text-white'
-              : 'bg-slate-800/90 text-slate-200'
+          className={`pointer-events-auto inline-flex items-center gap-2 self-start rounded-lg border bg-white/95 px-3 py-2 text-xs font-semibold shadow-[0_6px_20px_rgba(15,23,42,0.10)] backdrop-blur-sm ${
+            live ? 'border-emerald-200 text-emerald-700' : 'border-amber-200 text-amber-700'
           }`}
         >
-          <span className={`h-2 w-2 rounded-full ${live ? 'bg-white animate-pulse' : 'bg-amber-400'}`} />
+          <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-amber-400'}`} />
           {live ? 'Canlı takip' : 'Bağlantı bekleniyor'}
         </div>
         {(distanceLabel || etaLabel) && (
-          <div className="pointer-events-auto rounded-2xl bg-white/95 text-slate-800 shadow-xl px-4 py-3 min-w-[160px]">
+          <div className="pointer-events-auto min-w-[158px] rounded-xl border border-slate-200 bg-white/95 px-4 py-3 text-slate-800 shadow-[0_8px_28px_rgba(15,23,42,0.10)] backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Alışa kalan</p>
-            <p className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{distanceLabel || '—'}</p>
+            <p className="mt-0.5 text-xl font-semibold leading-tight tabular-nums">{distanceLabel || '—'}</p>
             <p className="text-sm text-slate-600 mt-1">
-              Tahmini varış <span className="font-semibold text-sky-700">{etaLabel || '—'}</span>
+              Tahmini varış <span className="font-semibold text-blue-700">{etaLabel || '—'}</span>
             </p>
           </div>
         )}
       </div>
 
       {courierLocation && (
-        <div className="pointer-events-none absolute bottom-4 left-4 z-[500] rounded-xl bg-slate-900/85 text-white px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
-          <span className="text-slate-400">Konum</span>{' '}
-          <span className="font-mono tabular-nums">
+        <div className="pointer-events-none absolute bottom-4 left-4 z-[500] rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-700 shadow-[0_6px_20px_rgba(15,23,42,0.10)] backdrop-blur-sm">
+          <span className="text-slate-500">Konum</span>{' '}
+          <span className="font-mono font-medium tabular-nums text-slate-800">
             {courierLocation.lat.toFixed(5)}, {courierLocation.lng.toFixed(5)}
           </span>
         </div>

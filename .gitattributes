@@ -3,3 +3,7 @@
 *.java whitespace=cr-at-eol
 *.yaml whitespace=cr-at-eol
 *.yml whitespace=cr-at-eol
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
