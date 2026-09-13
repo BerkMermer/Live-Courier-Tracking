@@ -64,7 +64,7 @@ class OrderControllerTest {
         return new OrderResponse(
                 1L,
                 "TRK-1", "Kadıköy, İstanbul", 40.99, 29.03, "Beşiktaş, İstanbul",
-                OrderStatus.PENDING, "Ayşe Müşteri", null, null, LocalDateTime.now());
+                OrderStatus.PENDING, "Ayşe Müşteri", null, null, null, null, LocalDateTime.now());
     }
 
     @Test

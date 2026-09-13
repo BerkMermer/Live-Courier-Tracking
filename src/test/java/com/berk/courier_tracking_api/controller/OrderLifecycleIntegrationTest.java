@@ -24,6 +24,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -72,6 +73,8 @@ class OrderLifecycleIntegrationTest extends IntegrationTestBase {
         assertEquals(OrderStatus.ASSIGNED, assigned.status());
         assertEquals(location.courierId(), assigned.courierId());
         assertEquals(courier.user().fullName(), assigned.courierName());
+        assertTrue(assigned.courierVehiclePlate().startsWith("34 LIF "));
+        assertTrue(assigned.courierPhoneMasked().matches("\\+90 \\d\\*\\* \\*\\*\\* \\*\\* \\d{2}"));
 
         OrderResponse pickedUp = pickup(courier.token(), created.id());
         assertEquals(OrderStatus.PICKED_UP, pickedUp.status());

@@ -16,10 +16,13 @@ public record OrderResponse(
         String customerName,
         Long courierId,
         String courierName,
+        String courierVehiclePlate,
+        String courierPhoneMasked,
         LocalDateTime createdAt
 ) {
 
     public static OrderResponse from(Order order) {
+        var courier = order.getCourier();
         return new OrderResponse(
                 order.getId(),
                 order.getTrackingNumber(),
@@ -29,11 +32,35 @@ public record OrderResponse(
                 order.getDeliveryAddress(),
                 order.getStatus(),
                 order.getCustomer().getFullName(),
-                order.getCourier() != null ? order.getCourier().getId() : null,
-                order.getCourier() != null && order.getCourier().getUser() != null
-                        ? order.getCourier().getUser().getFullName()
+                courier != null ? courier.getId() : null,
+                courier != null && courier.getUser() != null
+                        ? courier.getUser().getFullName()
                         : null,
+                courier != null ? courier.getVehiclePlate() : null,
+                courier != null ? maskPhone(courier.getPhoneNumber()) : null,
                 order.getCreatedAt()
         );
+    }
+
+    private static String maskPhone(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return null;
+        }
+
+        String digits = phoneNumber.replaceAll("\\D", "");
+        String localDigits = digits.startsWith("90") && digits.length() == 12
+                ? digits.substring(2)
+                : digits;
+
+        if (localDigits.length() < 3) {
+            return "***";
+        }
+
+        String lastTwoDigits = localDigits.substring(localDigits.length() - 2);
+        if (localDigits.length() == 10) {
+            return "+90 " + localDigits.charAt(0) + "** *** ** " + lastTwoDigits;
+        }
+
+        return "*** ** " + lastTwoDigits;
     }
 }
