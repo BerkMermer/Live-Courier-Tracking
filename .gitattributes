@@ -1,2 +1,5 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+*.java whitespace=cr-at-eol
+*.yaml whitespace=cr-at-eol
+*.yml whitespace=cr-at-eol

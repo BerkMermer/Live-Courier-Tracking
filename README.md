@@ -6,6 +6,7 @@ Real-time courier location tracking with nearest-courier assignment (Redis GEO) 
 
 Internship / portfolio demo — intentionally scoped, not a production product.
 
+[![CI](https://github.com/BerkMermer/live-courier-tracking/actions/workflows/ci.yml/badge.svg)](https://github.com/BerkMermer/live-courier-tracking/actions/workflows/ci.yml)
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -66,6 +67,10 @@ A customer places an order, the nearest available courier is assigned, and the c
 
 There is no hosted public URL. After [Quick Start](#quick-start), the live map (STOMP + courier movement) is at **http://localhost:3000**.
 
+![Live courier approach demo](docs/screenshots/live-demo.gif)
+
+The animation shows the assigned courier approaching the pickup point while the remaining road distance and ETA are recalculated.
+
 | Login & panel | Map & API |
 |---|---|
 | ![Login](docs/screenshots/login.png) | ![Live tracking](docs/screenshots/live-tracking.png) |
@@ -105,7 +110,40 @@ Do not commit `.env`. Port or Windows Compose issues: [docs/K8S.md](docs/K8S.md#
 
 ## Architecture
 
-![System architecture](docs/architecture.png)
+```mermaid
+flowchart LR
+    subgraph Client["Client"]
+        User["Customer / Courier"] --> React["React + Leaflet<br/>Port 3000"]
+    end
+
+    subgraph Application["Spring Boot API · Port 8080"]
+        RestSecurity["Spring Security<br/>JWT filter + method authorization"]
+        Controllers["REST Controllers"]
+        Services["Application Services<br/>order lifecycle + courier location"]
+        WsEndpoint["SockJS / STOMP Endpoint<br/>JWT CONNECT authentication"]
+        WsAuthorization["Subscription Authorization<br/>role + order ownership"]
+        BrokerRelay["STOMP Broker Relay"]
+
+        RestSecurity --> Controllers --> Services
+        WsEndpoint --> WsAuthorization --> BrokerRelay
+        Services -->|"publish location"| BrokerRelay
+    end
+
+    subgraph DataMessaging["Data and Messaging"]
+        Postgres[("PostgreSQL 16<br/>users, orders, courier profiles")]
+        Redis[("Redis 7 GEO<br/>live courier positions")]
+        RabbitMQ["RabbitMQ<br/>STOMP broker"]
+    end
+
+    React -->|"HTTPS REST + Bearer JWT"| RestSecurity
+    React <-->|"SockJS / STOMP<br/>live location topic"| WsEndpoint
+    RestSecurity -->|"load current user"| Postgres
+    Services <-->|"JPA + Flyway"| Postgres
+    Services <-->|"GEOADD / radius search"| Redis
+    BrokerRelay <-->|"STOMP TCP"| RabbitMQ
+```
+
+Editable Mermaid source: [`docs/architecture.mmd`](docs/architecture.mmd). It can be imported into Excalidraw and restyled there.
 
 Location topic: `/topic/courier-location.{courierId}` (`.` instead of `/` — RabbitMQ nested STOMP destinations).
 
@@ -223,7 +261,7 @@ live-courier-tracking/
 ├── scripts/             # k8s-deploy.ps1 / k8s-deploy.sh
 ├── docs/
 │   ├── K8S.md
-│   ├── architecture.png
+│   ├── architecture.mmd
 │   └── screenshots/
 ├── Dockerfile
 ├── docker-compose.yml
@@ -255,8 +293,9 @@ live-courier-tracking/
 |-------|------|
 | Unit | Service tests with JUnit 5 + Mockito (`OrderService`, `UserService`, Redis GEO, courier profile) |
 | Web / security | Controller tests with MockMvc and Spring Security test support |
-| Integration | `IntegrationTestBase` boots the app against **Testcontainers** PostgreSQL 16 |
+| Integration | Order lifecycle and concurrent courier assignment against **Testcontainers** PostgreSQL 16 + Redis 7 |
 | Coverage | JaCoCo (`jacoco-maven-plugin`); HTML report after tests: `target/site/jacoco/index.html` |
+| CI | GitHub Actions runs backend verification, frontend build and Kustomize rendering on pushes and pull requests |
 
 ```bash
 ./mvnw test      # Linux / macOS
