@@ -37,6 +37,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
+    @Value("${app.websocket.simple-broker:false}")
+    private boolean simpleBroker;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-courier")
@@ -46,15 +49,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Docker hostname'i vhost sanmasın diye "/" zorunlu
-        registry.enableStompBrokerRelay("/topic")
-                .setRelayHost(relayHost)
-                .setRelayPort(relayPort)
-                .setVirtualHost("/")
-                .setClientLogin(relayLogin)
-                .setClientPasscode(relayPasscode)
-                .setSystemLogin(relayLogin)
-                .setSystemPasscode(relayPasscode);
+        if (simpleBroker) {
+            // Integration tests skip RabbitMQ; production still uses the STOMP relay.
+            registry.enableSimpleBroker("/topic");
+        } else {
+            // Docker hostname'i vhost sanmasın diye "/" zorunlu
+            registry.enableStompBrokerRelay("/topic")
+                    .setRelayHost(relayHost)
+                    .setRelayPort(relayPort)
+                    .setVirtualHost("/")
+                    .setClientLogin(relayLogin)
+                    .setClientPasscode(relayPasscode)
+                    .setSystemLogin(relayLogin)
+                    .setSystemPasscode(relayPasscode);
+        }
 
         registry.setApplicationDestinationPrefixes("/app");
     }
