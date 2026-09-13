@@ -197,7 +197,7 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sipariş durumunu periyodik yenile (Swagger'dan assign görünür olsun)
+  // Sipariş durumunu periyodik olarak güncelle
   useEffect(() => {
     if (!token) return undefined;
     const id = setInterval(() => {
@@ -287,7 +287,7 @@ function App() {
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
                     autoComplete="email"
-                    placeholder="ornek@email.com"
+                    placeholder="mert.kaya@example.com"
                     required
                   />
                 </span>

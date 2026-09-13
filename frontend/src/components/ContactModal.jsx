@@ -13,8 +13,8 @@ const ContactModal = ({ courier, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const showDemoNotice = (channel) => {
-    setNotice(`Demo ortamında ${channel} işlemi devre dışıdır.`);
+  const showUnavailableNotice = (channel) => {
+    setNotice(`${channel} özelliği şu anda kullanılamıyor.`);
   };
 
   return (
@@ -73,7 +73,7 @@ const ContactModal = ({ courier, onClose }) => {
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => showDemoNotice('arama')}
+            onClick={() => showUnavailableNotice('Arama')}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <Phone size={17} />
@@ -81,7 +81,7 @@ const ContactModal = ({ courier, onClose }) => {
           </button>
           <button
             type="button"
-            onClick={() => showDemoNotice('mesaj gönderme')}
+            onClick={() => showUnavailableNotice('Mesaj gönderme')}
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <MessageSquare size={17} />
