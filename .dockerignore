@@ -3,3 +3,9 @@ target/
 .idea/
 *.iml
 .mvn/wrapper/maven-wrapper.jar
+.env
+.env.*
+!.env.example
+*.log
+frontend/node_modules/
+frontend/dist/

@@ -16,6 +16,13 @@ if ($Kind) {
   kind load docker-image courier-tracking-api:local --name courier
   kind load docker-image courier-tracking-frontend:local --name courier
 }
+if (-not (Test-Path ".env")) {
+  throw ".env bulunamadi. .env.example dosyasini .env olarak kopyalayip guvenli degerlerle doldurun."
+}
+Write-Host "==> Runtime secrets"
+kubectl apply -f k8s/base/namespace.yaml
+kubectl -n courier-tracking create secret generic courier-secrets --from-env-file=.env --dry-run=client -o yaml |
+  kubectl apply -f -
 kubectl apply -k k8s/overlays/local
 kubectl -n courier-tracking rollout status statefulset/postgres --timeout=180s
 kubectl -n courier-tracking rollout status deployment/redis --timeout=120s

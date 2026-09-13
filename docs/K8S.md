@@ -25,21 +25,10 @@ From the **repository root**:
 .\scripts\k8s-deploy.ps1
 ```
 
-Linux / macOS:
-
-```bash
-chmod +x scripts/k8s-deploy.sh
-./scripts/k8s-deploy.sh
-```
-
 kind (optional):
 
 ```powershell
 .\scripts\k8s-deploy.ps1 -Kind
-```
-
-```bash
-./scripts/k8s-deploy.sh --kind
 ```
 
 | Service | URL |
@@ -78,9 +67,11 @@ kubectl -n courier-tracking get pods,svc
 | Ingress + NodePort | In-cluster HTTP and local browser access |
 | HPA (CPU 70%, 1–3 replicas) | Object exists; it does not scale without metrics-server |
 
-`k8s/base/secret.yaml` is **local only**. On a real cluster:
+No Kubernetes Secret manifest is tracked by Git. The deployment script creates
+`courier-secrets` at runtime from the ignored local `.env` file. To create it manually:
 
 ```bash
+kubectl apply -f k8s/base/namespace.yaml
 kubectl -n courier-tracking create secret generic courier-secrets --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
 ```
 
@@ -118,7 +109,7 @@ Cluster Postgres starts empty. Flyway creates the schema only — no users. Regi
 PowerShell:
 
 ```powershell
-$b = @{ fullName="Berk Mermer"; email="berk@example.com"; phoneNumber="+905551112233"; password="securePass123" } | ConvertTo-Json
+$b = @{ fullName="Mert Kaya"; email="mert.kaya@example.com"; phoneNumber="+905551112233"; password="securePass123" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:18080/api/v1/auth/register -ContentType "application/json" -Body $b
 ```
 

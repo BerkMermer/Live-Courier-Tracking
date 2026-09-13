@@ -7,3 +7,6 @@
 *.jsx text eol=lf
 *.css text eol=lf
 *.html text eol=lf
+*.md whitespace=cr-at-eol
+**/.dockerignore whitespace=cr-at-eol
+*.ps1 whitespace=cr-at-eol

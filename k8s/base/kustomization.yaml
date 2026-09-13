@@ -4,7 +4,6 @@ namespace: courier-tracking
 resources:
   - namespace.yaml
   - configmap.yaml
-  - secret.yaml
   - postgres.yaml
   - redis.yaml
   - rabbitmq.yaml

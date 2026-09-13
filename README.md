@@ -201,10 +201,6 @@ Local overlay: `k8s/overlays/local`. From the repo root:
 .\scripts\k8s-deploy.ps1
 ```
 
-```bash
-./scripts/k8s-deploy.sh
-```
-
 Manifest rationale, kind / Docker Desktop image loading, NodePort vs port-forward, and first-user registration: **[docs/K8S.md](docs/K8S.md)**.
 
 ---
@@ -225,7 +221,7 @@ live-courier-tracking/
 ├── src/test/            # Unit (Mockito) + integration (Testcontainers)
 ├── frontend/            # React + Vite + Leaflet
 ├── k8s/                 # Kustomize base + local overlay
-├── scripts/             # k8s-deploy.ps1 / k8s-deploy.sh
+├── scripts/             # PowerShell Kubernetes deployment
 ├── docs/
 │   ├── K8S.md
 │   ├── architecture.png

@@ -46,8 +46,32 @@ spec:
           envFrom:
             - configMapRef:
                 name: courier-config
-            - secretRef:
-                name: courier-secrets
+          env:
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: POSTGRES_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: JWT_SECRET
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: courier-secrets
+                  key: RABBITMQ_PASSWORD
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
