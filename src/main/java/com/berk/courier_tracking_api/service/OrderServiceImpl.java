@@ -20,10 +20,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -91,7 +90,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse assignCourierToOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sipariş bulunamadı, id: " + orderId));
 
         if (order.getStatus().isTerminal()) {
@@ -104,15 +103,16 @@ public class OrderServiceImpl implements OrderService {
                     "Bu siparişe zaten kurye atanmış, mevcut durum: " + order.getStatus());
         }
 
-        List<CourierProfile> availableCouriers = courierProfileRepository.findByStatus(CourierStatus.AVAILABLE);
-        if (availableCouriers.isEmpty()) {
+        Set<Long> availableCourierIds = new HashSet<>(
+                courierProfileRepository.findIdsByStatus(CourierStatus.AVAILABLE));
+        if (availableCourierIds.isEmpty()) {
             throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER);
         }
 
-        CourierProfile selectedCourier = findNearestAvailableCourier(
+        CourierProfile selectedCourier = claimNearestAvailableCourier(
                 order.getPickupLatitude(),
                 order.getPickupLongitude(),
-                availableCouriers
+                availableCourierIds
         );
 
         order.setCourier(selectedCourier);
@@ -156,21 +156,36 @@ public class OrderServiceImpl implements OrderService {
         return OrderResponse.from(orderRepository.save(order));
     }
 
-    private CourierProfile findNearestAvailableCourier(double pickupLatitude, double pickupLongitude, List<CourierProfile> availableCouriers) {
-        Map<Long, CourierProfile> availableById = availableCouriers.stream()
-                .collect(Collectors.toMap(CourierProfile::getId, Function.identity()));
-
+    /**
+     * Claims the nearest Redis GEO match that is still AVAILABLE under SELECT FOR UPDATE.
+     * Re-checks status after the row lock so a parallel assignment cannot take the same courier.
+     */
+    private CourierProfile claimNearestAvailableCourier(
+            double pickupLatitude,
+            double pickupLongitude,
+            Set<Long> availableCourierIds
+    ) {
         List<Long> nearbyCourierIds = redisLocationService.findNearbyCouriers(pickupLatitude, pickupLongitude);
+        boolean sawNearbyAvailableSnapshot = false;
 
         for (Long courierId : nearbyCourierIds) {
-            CourierProfile courier = availableById.get(courierId);
-            if (courier != null) {
-                return courier;
+            if (!availableCourierIds.contains(courierId)) {
+                continue;
+            }
+            sawNearbyAvailableSnapshot = true;
+
+            CourierProfile lockedCourier = courierProfileRepository.findByIdForUpdate(courierId).orElse(null);
+            if (lockedCourier != null && lockedCourier.getStatus() == CourierStatus.AVAILABLE) {
+                return lockedCourier;
             }
         }
 
-        throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER,
-                "Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)");
+        if (!sawNearbyAvailableSnapshot) {
+            throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER,
+                    "Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)");
+        }
+
+        throw new BusinessException(ErrorCode.NO_AVAILABLE_COURIER);
     }
 
     private Order findOrderOrThrow(Long orderId) {

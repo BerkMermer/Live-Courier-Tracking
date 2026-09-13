@@ -107,8 +107,8 @@ class OrderServiceTest {
         pendingOrder.setPickupLatitude(41.0082);
         pendingOrder.setPickupLongitude(28.9784);
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
-        when(courierProfileRepository.findByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of());
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findIdsByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of());
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -116,8 +116,8 @@ class OrderServiceTest {
         );
 
         assertEquals("Şu anda müsait kurye bulunmamaktadır", exception.getMessage());
-        verify(orderRepository).findById(orderId);
-        verify(courierProfileRepository).findByStatus(CourierStatus.AVAILABLE);
+        verify(orderRepository).findByIdForUpdate(orderId);
+        verify(courierProfileRepository).findIdsByStatus(CourierStatus.AVAILABLE);
     }
 
     @Test
@@ -145,9 +145,10 @@ class OrderServiceTest {
         nearby.setUser(courierUser);
         nearby.setStatus(CourierStatus.AVAILABLE);
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
-        when(courierProfileRepository.findByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(nearby));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findIdsByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(7L));
         when(redisLocationService.findNearbyCouriers(40.9909, 29.0303)).thenReturn(List.of(7L));
+        when(courierProfileRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(nearby));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
         OrderResponse response = orderService.assignCourierToOrder(orderId);
@@ -170,8 +171,8 @@ class OrderServiceTest {
         available.setId(7L);
         available.setStatus(CourierStatus.AVAILABLE);
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
-        when(courierProfileRepository.findByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(available));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findIdsByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(7L));
         when(redisLocationService.findNearbyCouriers(40.9909, 29.0303)).thenReturn(List.of());
 
         RuntimeException exception = assertThrows(
@@ -181,6 +182,50 @@ class OrderServiceTest {
 
         assertEquals("Yakında Redis GEO kaydı olan müsait kurye yok (önce PUT /couriers/location)",
                 exception.getMessage());
+    }
+
+    @Test
+    void assignCourierToOrder_WhenLockedCourierAlreadyTaken_ShouldAssignNextNearby() {
+        User customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Berk Mermer");
+
+        Long orderId = 42L;
+        Order pendingOrder = new Order();
+        pendingOrder.setId(orderId);
+        pendingOrder.setCustomer(customer);
+        pendingOrder.setStatus(OrderStatus.PENDING);
+        pendingOrder.setPickupLatitude(40.9909);
+        pendingOrder.setPickupLongitude(29.0303);
+
+        User takenUser = new User();
+        takenUser.setId(10L);
+        takenUser.setFullName("Dolu Kurye");
+        CourierProfile taken = new CourierProfile();
+        taken.setId(7L);
+        taken.setUser(takenUser);
+        taken.setStatus(CourierStatus.ON_DELIVERY);
+
+        User freeUser = new User();
+        freeUser.setId(11L);
+        freeUser.setFullName("Boş Kurye");
+        CourierProfile free = new CourierProfile();
+        free.setId(8L);
+        free.setUser(freeUser);
+        free.setStatus(CourierStatus.AVAILABLE);
+
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(pendingOrder));
+        when(courierProfileRepository.findIdsByStatus(CourierStatus.AVAILABLE)).thenReturn(List.of(7L, 8L));
+        when(redisLocationService.findNearbyCouriers(40.9909, 29.0303)).thenReturn(List.of(7L, 8L));
+        when(courierProfileRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(taken));
+        when(courierProfileRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(free));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.assignCourierToOrder(orderId);
+
+        assertEquals(OrderStatus.ASSIGNED, response.status());
+        assertEquals(8L, response.courierId());
+        assertEquals(CourierStatus.ON_DELIVERY, free.getStatus());
     }
 
     @Test
