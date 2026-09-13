@@ -110,40 +110,7 @@ Do not commit `.env`. Port or Windows Compose issues: [docs/K8S.md](docs/K8S.md#
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Client["Client"]
-        User["Customer / Courier"] --> React["React + Leaflet<br/>Port 3000"]
-    end
-
-    subgraph Application["Spring Boot API · Port 8080"]
-        RestSecurity["Spring Security<br/>JWT filter + method authorization"]
-        Controllers["REST Controllers"]
-        Services["Application Services<br/>order lifecycle + courier location"]
-        WsEndpoint["SockJS / STOMP Endpoint<br/>JWT CONNECT authentication"]
-        WsAuthorization["Subscription Authorization<br/>role + order ownership"]
-        BrokerRelay["STOMP Broker Relay"]
-
-        RestSecurity --> Controllers --> Services
-        WsEndpoint --> WsAuthorization --> BrokerRelay
-        Services -->|"publish location"| BrokerRelay
-    end
-
-    subgraph DataMessaging["Data and Messaging"]
-        Postgres[("PostgreSQL 16<br/>users, orders, courier profiles")]
-        Redis[("Redis 7 GEO<br/>live courier positions")]
-        RabbitMQ["RabbitMQ<br/>STOMP broker"]
-    end
-
-    React -->|"HTTPS REST + Bearer JWT"| RestSecurity
-    React <-->|"SockJS / STOMP<br/>live location topic"| WsEndpoint
-    RestSecurity -->|"load current user"| Postgres
-    Services <-->|"JPA + Flyway"| Postgres
-    Services <-->|"GEOADD / radius search"| Redis
-    BrokerRelay <-->|"STOMP TCP"| RabbitMQ
-```
-
-Editable Mermaid source: [`docs/architecture.mmd`](docs/architecture.mmd). It can be imported into Excalidraw and restyled there.
+![System architecture](docs/architecture.png)
 
 Location topic: `/topic/courier-location.{courierId}` (`.` instead of `/` — RabbitMQ nested STOMP destinations).
 
@@ -261,7 +228,7 @@ live-courier-tracking/
 ├── scripts/             # k8s-deploy.ps1 / k8s-deploy.sh
 ├── docs/
 │   ├── K8S.md
-│   ├── architecture.mmd
+│   ├── architecture.png
 │   └── screenshots/
 ├── Dockerfile
 ├── docker-compose.yml
