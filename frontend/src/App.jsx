@@ -3,15 +3,18 @@ import LiveMap from './components/LiveMap';
 import DashboardPanel from './components/DashboardPanel';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Client } from '@stomp/stompjs';
-import { ArrowRight, LockKeyhole, LogOut, Mail, MapPinned, RefreshCw } from 'lucide-react';
+import { ArrowRight, LockKeyhole, LogOut, Mail, MapPinned, Phone, RefreshCw, User } from 'lucide-react';
 import { formatKm } from './utils/geo';
 import { useRoadRoute } from './hooks/useRoadRoute';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? '' : 'http://localhost:8080');
 
 function App() {
+  const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [token, setToken] = useState(() => localStorage.getItem('cta_token') || '');
   const [orders, setOrders] = useState([]);
   const [selectedTracking, setSelectedTracking] = useState(null);
@@ -85,24 +88,27 @@ function App() {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     setLoginError('');
     setLoading(true);
+    const isRegister = authMode === 'register';
     try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      const res = await fetch(`${API_BASE}/api/v1/auth/${isRegister ? 'register' : 'login'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(
+          isRegister ? { fullName, email, phoneNumber, password } : { email, password }
+        ),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `Giriş başarısız (${res.status})`);
+        throw new Error(err.message || (isRegister ? `Kayıt başarısız (${res.status})` : `Giriş başarısız (${res.status})`));
       }
       const data = await res.json();
       localStorage.setItem('cta_token', data.token);
       setToken(data.token);
-      addEvent(`Giriş OK: ${data.user.email} (${data.user.role})`);
+      addEvent(`${isRegister ? 'Kayıt' : 'Giriş'} OK: ${data.user.email} (${data.user.role})`);
       await loadOrders(data.token);
     } catch (err) {
       setLoginError(err.message);
@@ -258,7 +264,7 @@ function App() {
             </div>
           </section>
 
-          <form onSubmit={handleLogin} className="p-7 sm:p-10 lg:p-14">
+          <form onSubmit={handleAuth} className="p-7 sm:p-10 lg:p-14">
             <div className="flex items-center gap-2 text-sm font-semibold text-blue-800 lg:hidden">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-100">
                 <MapPinned size={19} />
@@ -268,12 +274,73 @@ function App() {
             <p className="mt-10 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 lg:mt-0">
               Müşteri paneli
             </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Tekrar hoş geldiniz</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              {authMode === 'register' ? 'Hesap oluşturun' : 'Tekrar hoş geldiniz'}
+            </h2>
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
-              Aktif siparişinizi ve kuryenizin canlı konumunu görüntülemek için giriş yapın.
+              {authMode === 'register'
+                ? 'Yerel veritabanı boş başlar. Müşteri hesabı oluşturup panele girin.'
+                : 'Aktif siparişinizi ve kuryenizin canlı konumunu görüntülemek için giriş yapın. Hesabınız yoksa kayıt olun.'}
             </p>
 
-            <div className="mt-8 space-y-5">
+            <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-sm font-semibold">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setLoginError(''); }}
+                className={`rounded-md px-3 py-2 transition ${authMode === 'login' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Giriş
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('register'); setLoginError(''); }}
+                className={`rounded-md px-3 py-2 transition ${authMode === 'register' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Kayıt
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {authMode === 'register' && (
+                <>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Ad soyad
+                    <span className="relative mt-2 block">
+                      <User
+                        size={17}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        type="text"
+                        autoComplete="name"
+                        placeholder="Mert Kaya"
+                        required
+                      />
+                    </span>
+                  </label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Telefon
+                    <span className="relative mt-2 block">
+                      <Phone
+                        size={17}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="+905551112233"
+                        required
+                      />
+                    </span>
+                  </label>
+                </>
+              )}
               <label className="block text-sm font-medium text-slate-700">
                 E-posta adresi
                 <span className="relative mt-2 block">
@@ -305,8 +372,9 @@ function App() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     type="password"
-                    autoComplete="current-password"
-                    placeholder="Şifrenizi girin"
+                    autoComplete={authMode === 'register' ? 'new-password' : 'current-password'}
+                    placeholder={authMode === 'register' ? 'En az 8 karakter' : 'Şifrenizi girin'}
+                    minLength={authMode === 'register' ? 8 : undefined}
                     required
                   />
                 </span>
@@ -324,12 +392,14 @@ function App() {
               disabled={loading}
               className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
             >
-              {loading ? 'Giriş yapılıyor…' : 'Giriş yap'}
+              {loading
+                ? (authMode === 'register' ? 'Kaydediliyor…' : 'Giriş yapılıyor…')
+                : (authMode === 'register' ? 'Kayıt ol' : 'Giriş yap')}
               {!loading && <ArrowRight size={17} />}
             </button>
 
             <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-              Giriş bilgileriniz yalnızca güvenli oturum oluşturmak için kullanılır.
+              Kurye hesabı için Swagger üzerinden <code className="text-slate-500">/register-courier</code> kullanın.
             </p>
           </form>
         </main>

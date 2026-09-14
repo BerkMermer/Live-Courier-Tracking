@@ -78,14 +78,17 @@ spec:
               port: http
             failureThreshold: 40
             periodSeconds: 5
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: http
+            timeoutSeconds: 3
           volumeMounts:
             - name: tmp
               mountPath: /tmp

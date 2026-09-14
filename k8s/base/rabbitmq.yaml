@@ -52,8 +52,11 @@ spec:
           startupProbe:
             exec:
               command: ["rabbitmq-diagnostics","-q","ping"]
-            failureThreshold: 30
+            failureThreshold: 36
             periodSeconds: 5
+            timeoutSeconds: 10
           readinessProbe:
             tcpSocket:
               port: stomp
+            periodSeconds: 10
+            timeoutSeconds: 3

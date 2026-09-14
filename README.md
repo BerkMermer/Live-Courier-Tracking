@@ -100,11 +100,19 @@ Unit + MockMvc tests, plus integration tests for the order flow, concurrent assi
 
 ## Kubernetes
 
-Manifests are for **local** Docker Desktop Kubernetes or kind — not a cloud cluster.
+Manifests are for a **local** cluster (minikube, Docker Desktop Kubernetes, or kind) — not AWS/GCP.
 
 ```powershell
-.\scripts\k8s-deploy.ps1
+.\scripts\k8s-deploy.ps1 -Minikube
 ```
+
+If NodePort is not on localhost:
+
+```powershell
+kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
+```
+
+Then open http://127.0.0.1:18080 — cluster Postgres is empty, so register from the login page first.
 
 Details: [docs/K8S.md](docs/K8S.md)
 

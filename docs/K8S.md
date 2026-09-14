@@ -2,7 +2,7 @@
 
 Compose is enough for day-to-day development. This overlay is the portfolio piece: service discovery, probes, Secrets, persistent volumes, Ingress, and HPA.
 
-The local overlay (`k8s/overlays/local`) targets Docker Desktop Kubernetes or kind. Images are not pushed to a registry; they are loaded as `courier-tracking-api:local` and `courier-tracking-frontend:local`.
+The local overlay (`k8s/overlays/local`) targets minikube, Docker Desktop Kubernetes, or kind. Images are not pushed to a registry; they are loaded as `courier-tracking-api:local` and `courier-tracking-frontend:local`.
 
 ```text
 Ingress / NodePort
@@ -25,6 +25,12 @@ From the **repository root**:
 .\scripts\k8s-deploy.ps1
 ```
 
+minikube (this repo’s default when Docker Desktop Kubernetes is off):
+
+```powershell
+.\scripts\k8s-deploy.ps1 -Minikube
+```
+
 kind (optional):
 
 ```powershell
@@ -33,17 +39,12 @@ kind (optional):
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:30080 |
+| Frontend | http://localhost:30080 (Docker Desktop / kind port map) |
 | Swagger | http://localhost:30808/swagger-ui.html |
 | Health | http://localhost:30808/actuator/health |
+| minikube (Windows + Docker driver) | `kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80` then http://127.0.0.1:18080 |
 
-If NodePort does not open in the browser:
-
-```bash
-kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
-```
-
-Then open http://127.0.0.1:18080
+`minikube service ... --url` also works but keeps that terminal open as a tunnel. Do not treat NodePort `30080` as localhost on this driver.
 
 ## Apply by hand
 
@@ -104,7 +105,7 @@ A local HTTP registry (`localhost:5000`) also fails in this mode: pulls go throu
 
 ## First user
 
-Cluster Postgres starts empty. Flyway creates the schema only — no users. Register before logging into the panel.
+Cluster Postgres starts empty. Flyway creates the schema only — no users. Use **Kayıt** on the login page, or register via the API:
 
 PowerShell:
 
