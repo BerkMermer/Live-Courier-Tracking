@@ -39,6 +39,11 @@ frontend/node_modules/
 frontend/dist/
 node_modules/
 
+# Local screenshot capture deps (Playwright) — do not publish
+scripts/package.json
+scripts/package-lock.json
+scripts/node_modules/
+
 # Ortam değişkenleri (secrets) — asla commitlenmesin
 .env
 .env.*

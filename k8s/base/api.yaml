@@ -47,6 +47,8 @@ spec:
             - configMapRef:
                 name: courier-config
           env:
+            - name: TZ
+              value: Europe/Istanbul
             - name: DATABASE_USERNAME
               valueFrom:
                 secretKeyRef:

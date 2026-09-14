@@ -1,7 +1,8 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { nearestPointOnPolyline } from '../utils/geo';
 
 const motoIcon = L.divIcon({
   className: 'courier-moto-marker',
@@ -90,12 +91,23 @@ const LiveMap = ({
   const pickupPos =
     pickup?.[0] != null && pickup?.[1] != null ? [pickup[0], pickup[1]] : null;
 
-  // Prefer road-snapped point so the moto isn't drawn in the water
-  const currentPos = snappedCourier
-    ? snappedCourier
-    : courierLocation
-      ? [courierLocation.lat, courierLocation.lng]
-      : null;
+  // Keep the moto on the blue road polyline.
+  // Prefer OSRM's road-snapped origin when it matches the current GPS update;
+  // otherwise project raw GPS onto the polyline (parallel-street GPS noise).
+  const currentPos = useMemo(() => {
+    if (!courierLocation) return null;
+    if (routePositions.length > 1) {
+      if (snappedCourier) return snappedCourier;
+      return (
+        nearestPointOnPolyline(courierLocation.lat, courierLocation.lng, routePositions) || [
+          courierLocation.lat,
+          courierLocation.lng,
+        ]
+      );
+    }
+    if (snappedCourier) return snappedCourier;
+    return [courierLocation.lat, courierLocation.lng];
+  }, [courierLocation, routePositions, snappedCourier]);
 
   const center = currentPos || pickupPos || defaultCenter;
 
@@ -103,8 +115,9 @@ const LiveMap = ({
     <div className="relative h-full w-full">
       <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false}>
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+          attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+          maxZoom={16}
         />
 
         {pickupPos && (
@@ -128,9 +141,9 @@ const LiveMap = ({
           <Polyline
             positions={routePositions}
             pathOptions={{
-              color: '#2563eb',
-              weight: 4,
-              opacity: 0.9,
+              color: '#1d4ed8',
+              weight: 5,
+              opacity: 0.95,
               lineCap: 'round',
               lineJoin: 'round',
             }}
@@ -164,9 +177,8 @@ const LiveMap = ({
       </div>
 
       {courierLocation && (
-        <div className="pointer-events-none absolute bottom-4 left-4 z-[500] rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-700 shadow-[0_6px_20px_rgba(15,23,42,0.10)] backdrop-blur-sm">
-          <span className="text-slate-500">Konum</span>{' '}
-          <span className="font-mono font-medium tabular-nums text-slate-800">
+        <div className="pointer-events-none absolute bottom-4 left-4 z-[500] rounded-lg border border-slate-200/80 bg-white/80 px-2.5 py-1.5 text-[10px] text-slate-500 shadow-sm backdrop-blur-sm">
+          <span className="font-mono tabular-nums">
             {courierLocation.lat.toFixed(5)}, {courierLocation.lng.toFixed(5)}
           </span>
         </div>

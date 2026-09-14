@@ -4,15 +4,9 @@
 
 Nearest courier via Redis GEO, live map over STOMP WebSocket.
 
-Student / internship demo. Not a production product.
-
-[![CI](https://github.com/BerkMermer/live-courier-tracking/actions/workflows/ci.yml/badge.svg)](https://github.com/BerkMermer/live-courier-tracking/actions/workflows/ci.yml)
-
 </div>
 
 A customer creates an order. The API assigns the nearest available courier (Redis GEO, 10 km). The courier’s location is pushed to a React + Leaflet map over JWT-secured WebSocket (RabbitMQ STOMP relay).
-
-**Not included:** payments, push notifications, guest checkout, public hosted URL.
 
 ## Demo
 
@@ -55,7 +49,7 @@ Topic: `/topic/courier-location.{courierId}`
 
 ## Stack
 
-Java 17 · Spring Boot 4 · PostgreSQL 16 · Flyway · Redis GEO · RabbitMQ STOMP · JWT · React 18 · Leaflet · Docker Compose · Kustomize (local) · Testcontainers · GitHub Actions
+Java 17 · Spring Boot 4 · PostgreSQL 16 · Flyway · Redis GEO · RabbitMQ STOMP · JWT · React 18 · Leaflet · Docker Compose · Kustomize (local) · Testcontainers
 
 ## How to try the API
 
@@ -122,6 +116,6 @@ JWT + roles. Order and live-location access are ownership-checked (REST and STOM
 
 ## License
 
-All Rights Reserved — [LICENSE](LICENSE). Educational / portfolio use.
+All Rights Reserved — [LICENSE](LICENSE).
 
 **Berk Coşkun Mermer** · [GitHub](https://github.com/BerkMermer) · [LinkedIn](https://linkedin.com/in/berkcoskunmermer)

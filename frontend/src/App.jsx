@@ -4,7 +4,7 @@ import DashboardPanel from './components/DashboardPanel';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Client } from '@stomp/stompjs';
 import { ArrowRight, LockKeyhole, LogOut, Mail, MapPinned, Phone, RefreshCw, User } from 'lucide-react';
-import { formatKm } from './utils/geo';
+import { formatApiTimestamp, formatKm } from './utils/geo';
 import { useRoadRoute } from './hooks/useRoadRoute';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.PROD ? '' : 'http://localhost:8080');
@@ -230,7 +230,7 @@ function App() {
           ? `${courierLocation.lat.toFixed(5)}, ${courierLocation.lng.toFixed(5)}`
           : null,
       lastUpdateLabel: courierLocation?.updatedAt
-        ? formatTimestamp(courierLocation.updatedAt)
+        ? formatApiTimestamp(courierLocation.updatedAt)
         : null,
     };
   }, [
@@ -491,20 +491,6 @@ function App() {
       </aside>
     </main>
   );
-}
-
-function formatTimestamp(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat('tr-TR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(date);
 }
 
 export default App;

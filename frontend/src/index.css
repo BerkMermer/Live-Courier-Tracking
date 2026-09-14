@@ -30,6 +30,19 @@ body {
   background: #e8eef5;
 }
 
+/* Quiet basemap: streets stay as soft context; courier + route stay sharp */
+.leaflet-tile-pane {
+  filter: saturate(0.2) contrast(0.88) brightness(1.08);
+  opacity: 0.88;
+}
+
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  filter: none;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
@@ -54,7 +67,7 @@ body {
   height: 44px;
   display: grid;
   place-items: center;
-  filter: drop-shadow(0 5px 8px rgba(15, 23, 42, 0.18));
+  filter: drop-shadow(0 6px 14px rgba(37, 99, 235, 0.35));
 }
 
 .pin-badge {
@@ -64,7 +77,7 @@ body {
   display: grid;
   place-items: center;
   border: 3px solid #ffffff;
-  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
 }
 
 .pin-pickup {

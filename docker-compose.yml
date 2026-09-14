@@ -87,6 +87,7 @@ services:
       RABBITMQ_STOMP_PORT: "61613"
       RABBITMQ_USER: "${RABBITMQ_USER:-courier}"
       RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-courier}"
+      TZ: "Europe/Istanbul"
       JWT_SECRET: "${JWT_SECRET:-c2VjcmV0S2V5Rm9yRGV2ZWxvcG1lbnRPbmx5MzJieXRlcw==}"
       JWT_EXPIRATION: "${JWT_EXPIRATION:-86400000}"
       APP_PORT: "${APP_PORT:-8080}"

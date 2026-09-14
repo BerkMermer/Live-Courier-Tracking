@@ -10,6 +10,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import ContactModal from './ContactModal';
+import { formatApiTimestamp } from '../utils/geo';
 
 const STATUS_TR = {
   PENDING: { label: 'Beklemede', tone: 'amber' },
@@ -107,7 +108,7 @@ const DashboardPanel = ({
                 </button>
               </div>
               <p className="mt-1 text-[11px] text-slate-400">
-                Oluşturuldu: {formatFullDate(order.createdAt)}
+                Oluşturuldu: {formatApiTimestamp(order.createdAt)}
               </p>
             </div>
             <span
@@ -279,21 +280,6 @@ function progressLabel(status) {
     DELIVERED: 'Tamamlandı',
     CANCELLED: 'İptal edildi',
   }[status] ?? status;
-}
-
-function formatFullDate(value) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('tr-TR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(date);
 }
 
 function shortId(id) {

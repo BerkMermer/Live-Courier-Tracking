@@ -2,6 +2,11 @@ spring:
   application:
     name: courier-tracking-api
 
+  jackson:
+    time-zone: Europe/Istanbul
+    serialization:
+      write-dates-as-timestamps: false
+
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/courier_tracking}
     username: ${DATABASE_USERNAME:postgres}

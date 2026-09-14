@@ -42,18 +42,18 @@ export function useRoadRoute(fromLat, fromLng, toLat, toLng) {
         if (!coords?.length) throw new Error('No route');
 
         const positions = coords.map(([lng, lat]) => [lat, lng]);
+        // Prefer the OSRM road-snapped origin so the moto sits on the drawn polyline
         setRoute({
           positions,
           distanceKm: best.distance / 1000,
           durationMin: Math.max(1, Math.round(best.duration / 60)),
-          // First vertex is road-snapped — keeps marker off the water
           snappedFrom: positions[0],
         });
       } catch (err) {
         if (reqId !== reqIdRef.current) return;
         console.warn('Yol rotası alınamadı:', err.message);
       }
-    }, 400);
+    }, 200);
 
     return () => {
       clearTimeout(timer);

@@ -1,6 +1,6 @@
 # Kubernetes (local)
 
-Compose is enough for day-to-day development. This overlay is the portfolio piece: service discovery, probes, Secrets, persistent volumes, Ingress, and HPA.
+Compose is enough for day-to-day development. This overlay adds service discovery, probes, Secrets, persistent volumes, Ingress, and HPA.
 
 The local overlay (`k8s/overlays/local`) targets minikube, Docker Desktop Kubernetes, or kind. Images are not pushed to a registry; they are loaded as `courier-tracking-api:local` and `courier-tracking-frontend:local`.
 
