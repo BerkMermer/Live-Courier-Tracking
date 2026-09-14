@@ -51,7 +51,7 @@ A customer places an order, the nearest available courier is assigned, and the c
 | **Auth** | JWT with roles `CUSTOMER`, `COURIER`, `ADMIN` |
 | **Assignment** | Redis GEO (`GEORADIUS`, 10 km); courier must have sent `PUT /couriers/location` |
 | **Realtime** | RabbitMQ STOMP broker relay |
-| **Orders** | Numeric `id` in API JSON, UUID `trackingNumber`, soft delete, ownership checks |
+| **Orders** | Numeric `id` in API JSON, UUID `trackingNumber`, lifecycle rules, ownership checks |
 | **Ops** | Docker Compose stack; Kubernetes (Kustomize) with probes, Secret/ConfigMap, StatefulSet, Ingress, HPA |
 
 ### Out of scope
@@ -70,6 +70,8 @@ There is no hosted public URL. After [Quick Start](#quick-start), the live map (
 ![Live courier approach demo](docs/screenshots/live-demo.gif)
 
 The animation shows the assigned courier approaching the pickup point while the remaining road distance and ETA are recalculated.
+
+The light basemap uses [Stadia Maps](https://stadiamaps.com/) with OpenStreetMap data. Localhost works without credentials; a hosted deployment requires Stadia domain authentication or an API key.
 
 | Login & panel | Map & API |
 |---|---|
@@ -135,7 +137,7 @@ Versions live here (badges above are the stack, not a second copy of every numbe
 | Database / cache | PostgreSQL 16, Flyway, Redis 7 (GEO) |
 | Realtime | STOMP WebSocket + SockJS, RabbitMQ (broker relay) |
 | API docs | SpringDoc OpenAPI (Swagger UI) |
-| Frontend | React 18, Vite, Tailwind CSS, Leaflet + OSRM |
+| Frontend | React 18, Vite, Tailwind CSS, Leaflet + Stadia Maps + OSRM |
 | Test / ops | JUnit, Mockito, Testcontainers, JaCoCo, Docker Compose, Kubernetes (Kustomize) |
 
 Spring Boot **4.0.7** is the parent in `pom.xml` (not a 3.x typo).
@@ -243,7 +245,6 @@ live-courier-tracking/
 | WebSocket | Handshake origins = REST CORS allowlist. Subscribe only `/topic/courier-location.{id}` |
 | Roles | `POST /register` → `CUSTOMER`; `POST /register-courier` → `COURIER` + profile |
 | Passwords | BCrypt |
-| Soft delete | `deleted_at` + `@SQLRestriction` |
 | CORS | Allowlist (`app.cors.allowed-origins`) for REST and SockJS |
 | Actuator | `/actuator/health` public; other actuator endpoints not exposed |
 | Out of scope | Rate limit, HTTPS, token revocation — local Compose demo, not a hosted product |
