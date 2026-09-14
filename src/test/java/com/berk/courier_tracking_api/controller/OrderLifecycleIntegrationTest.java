@@ -91,6 +91,42 @@ class OrderLifecycleIntegrationTest extends IntegrationTestBase {
         assertEquals(location.courierId(), afterDelivery.courierId());
     }
 
+    @Test
+    void getOrder_whenOwnedByAnotherCustomer_shouldReturnForbidden() throws Exception {
+        AuthResponse owner = registerCustomer();
+        AuthResponse anotherCustomer = registerCustomer();
+        OrderResponse order = createOrder(owner.token());
+
+        mockMvc.perform(get("/api/v1/orders/" + order.id())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(anotherCustomer.token())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getCourierLocation_withoutActiveOrder_shouldReturnForbidden() throws Exception {
+        AuthResponse customer = registerCustomer();
+        AuthResponse courier = registerCourier();
+        CourierLocationResponse location = updateCourierLocation(courier.token(), PICKUP_LAT, PICKUP_LNG);
+
+        mockMvc.perform(get("/api/v1/couriers/" + location.courierId() + "/location")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void pickup_whenCourierIsNotAssigned_shouldReturnForbidden() throws Exception {
+        AuthResponse customer = registerCustomer();
+        AuthResponse assignedCourier = registerCourier();
+        AuthResponse anotherCourier = registerCourier();
+        updateCourierLocation(assignedCourier.token(), PICKUP_LAT, PICKUP_LNG);
+        OrderResponse order = createOrder(customer.token());
+        assignCourier(assignedCourier.token(), order.id());
+
+        mockMvc.perform(post("/api/v1/orders/" + order.id() + "/pickup")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(anotherCourier.token())))
+                .andExpect(status().isForbidden());
+    }
+
     private AuthResponse registerCustomer() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         UserRegisterRequest request = new UserRegisterRequest(
