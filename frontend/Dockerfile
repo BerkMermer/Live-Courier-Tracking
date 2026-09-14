@@ -2,9 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Paket dosyalarını kopyala ve kurulumları yap
-COPY package.json ./
-RUN npm install
+# Lockfile ile tekrarlanabilir bağımlılık kurulumu
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Kalan tüm dosyaları kopyala
 COPY . .
