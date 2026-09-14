@@ -57,7 +57,7 @@ async function captureLoginMasked(page) {
   });
   await page.waitForTimeout(400);
   await page.screenshot({
-    path: path.join(outDir, 'login.png'),
+    path: path.join(outDir, 'login-panel.png'),
     fullPage: true,
   });
 }
@@ -94,12 +94,12 @@ async function captureDashboard(page) {
   // Wait for OSRM polyline + snap to settle so the moto sits on the blue line
   await page.waitForTimeout(3500);
   await page.screenshot({
-    path: path.join(outDir, 'live-tracking.png'),
+    path: path.join(outDir, 'map-live.png'),
     fullPage: false,
   });
 
   const panel = page.locator('aside').first();
-  await panel.screenshot({ path: path.join(outDir, 'order-panel.png') });
+  await panel.screenshot({ path: path.join(outDir, 'order-sidebar.png') });
 }
 
 async function captureGif(page, frames = 12) {
@@ -153,7 +153,7 @@ async function captureGif(page, frames = 12) {
     paths.push(framePath);
   }
 
-  const gifPath = path.join(outDir, 'live-demo.gif');
+  const gifPath = path.join(outDir, 'live-tracking-demo.gif');
   const gif = GIFEncoder();
   for (const p of paths) {
     const png = PNG.sync.read(fs.readFileSync(p));
@@ -173,7 +173,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
-  console.log('login.png');
+  console.log('login-panel.png');
   await captureLoginMasked(page);
 
   console.log('dashboard');

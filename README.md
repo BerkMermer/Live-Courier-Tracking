@@ -12,11 +12,11 @@ A customer creates an order. The API assigns the nearest available courier (Redi
 
 Local after Quick Start: **http://localhost:3000**
 
-![Live courier approach](docs/screenshots/live-demo.gif)
+![Live courier approach](docs/screenshots/live-tracking-demo.gif)
 
 | Login | Map | Panel | API |
 |---|---|---|---|
-| ![Login](docs/screenshots/login.png) | ![Live tracking](docs/screenshots/live-tracking.png) | ![Order panel](docs/screenshots/order-panel.png) | ![Swagger](docs/screenshots/swagger.png) |
+| ![Login](docs/screenshots/login-panel.png) | ![Live tracking](docs/screenshots/map-live.png) | ![Order panel](docs/screenshots/order-sidebar.png) | ![Swagger](docs/screenshots/api-swagger.png) |
 
 ## Quick start
 
