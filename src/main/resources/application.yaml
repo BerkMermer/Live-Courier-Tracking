@@ -4,8 +4,6 @@ spring:
 
   jackson:
     time-zone: Europe/Istanbul
-    serialization:
-      write-dates-as-timestamps: false
 
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/courier_tracking}

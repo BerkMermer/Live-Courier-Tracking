@@ -39,7 +39,7 @@ docker compose up --build -d
 docker compose down
 ```
 
-Do not commit `.env`.
+Do not commit `.env`. Frontend without Compose: `cd frontend && npm install && npm run dev`.
 
 ## Architecture
 
@@ -51,7 +51,7 @@ Topic: `/topic/courier-location.{courierId}`
 
 Java 17 · Spring Boot 4 · PostgreSQL 16 · Flyway · Redis GEO · RabbitMQ STOMP · JWT · React 18 · Leaflet · Docker Compose · Kustomize (local) · Testcontainers
 
-## How to try the API
+## Usage
 
 Swagger → **Authorize** with `Bearer <JWT>`:
 
@@ -62,27 +62,6 @@ Swagger → **Authorize** with `Bearer <JWT>`:
 5. Courier token: `POST /api/v1/orders/{id}/assign-courier`
 6. Open the map, then courier `pickup` → `deliver`
 
-Frontend without Compose: `cd frontend && npm install && npm run dev`
-
-## API
-
-Swagger: http://localhost:8080/swagger-ui.html
-
-**Auth** `/api/v1/auth` — public `register`, `register-courier`, `login`
-
-**Orders** `/api/v1/orders`
-
-| Method | Path | Who |
-|--------|------|-----|
-| POST | `/` | CUSTOMER |
-| GET | `/me`, `/{id}` | owner (courier/admin on detail) |
-| POST | `/{id}/cancel` | CUSTOMER, `PENDING` only |
-| DELETE | `/{id}` | CUSTOMER, `CANCELLED` / `DELIVERED` (soft delete) |
-| POST | `/{id}/assign-courier` | COURIER / ADMIN |
-| POST | `/{id}/pickup`, `/{id}/deliver` | assigned courier |
-
-**Couriers** `/api/v1/couriers` — `PUT /location` (COURIER), `GET /{id}/location` (customer needs an active order)
-
 ## Tests
 
 ```bash
@@ -90,29 +69,21 @@ Swagger: http://localhost:8080/swagger-ui.html
 mvnw.cmd test    # Windows
 ```
 
-Unit + MockMvc tests, plus integration tests for the order flow, concurrent assignment, and WebSocket/BOLA checks.
+Unit, MockMvc, and integration tests (order flow, concurrent assignment, WebSocket/BOLA).
 
 ## Kubernetes
 
-Manifests are for a **local** cluster (minikube, Docker Desktop Kubernetes, or kind) — not AWS/GCP.
+Local cluster only (minikube / Docker Desktop / kind):
 
 ```powershell
 .\scripts\k8s-deploy.ps1 -Minikube
 ```
 
-If NodePort is not on localhost:
-
-```powershell
-kubectl -n courier-tracking port-forward svc/courier-frontend 18080:80
-```
-
-Then open http://127.0.0.1:18080 — cluster Postgres is empty, so register from the login page first.
-
 Details: [docs/K8S.md](docs/K8S.md)
 
-## Security (short)
+## Security
 
-JWT + roles. Order and live-location access are ownership-checked (REST and STOMP topic). Passwords are BCrypt. Secrets stay in local `.env`; the K8s script creates a Secret at deploy time.
+JWT + roles. Order and live-location access are ownership-checked (REST and STOMP). Passwords are BCrypt. Secrets stay in local `.env`; the K8s script creates a Secret at deploy time.
 
 ## License
 

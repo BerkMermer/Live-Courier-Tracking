@@ -316,7 +316,7 @@ function App() {
                         onChange={(e) => setFullName(e.target.value)}
                         type="text"
                         autoComplete="name"
-                        placeholder="Mert Kaya"
+                        placeholder="Adınızı soyadınızı girin"
                         required
                       />
                     </span>
@@ -334,7 +334,7 @@ function App() {
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         type="tel"
                         autoComplete="tel"
-                        placeholder="+905551112233"
+                        placeholder="Telefon numaranızı girin"
                         required
                       />
                     </span>
@@ -354,7 +354,7 @@ function App() {
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
                     autoComplete="email"
-                    placeholder="mert.kaya@example.com"
+                    placeholder="E-posta adresinizi girin"
                     required
                   />
                 </span>
@@ -373,7 +373,7 @@ function App() {
                     onChange={(e) => setPassword(e.target.value)}
                     type="password"
                     autoComplete={authMode === 'register' ? 'new-password' : 'current-password'}
-                    placeholder={authMode === 'register' ? 'En az 8 karakter' : 'Şifrenizi girin'}
+                    placeholder="Şifrenizi girin"
                     minLength={authMode === 'register' ? 8 : undefined}
                     required
                   />
