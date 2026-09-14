@@ -80,7 +80,7 @@ The animation shows the assigned courier approaching the pickup point while the 
 
 ## Quick Start
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose, and Git. JDK 17 is needed only to run tests on the host.
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose, and Git. Running tests on the host also requires JDK 17 and a running Docker daemon for Testcontainers.
 
 ```bash
 git clone https://github.com/BerkMermer/live-courier-tracking.git
@@ -238,7 +238,7 @@ live-courier-tracking/
 
 | Topic | Approach |
 |-------|----------|
-| Auth | JWT (HS256), stateless. Local demo: default secret in yaml / `.env` |
+| Auth | JWT (HS256), stateless. Secrets come from the ignored local `.env`; Kubernetes creates its Secret at deploy time |
 | BOLA | Order detail/cancel: ownership. Courier location + STOMP topic: customer must have an active order with that courier |
 | WebSocket | Handshake origins = REST CORS allowlist. Subscribe only `/topic/courier-location.{id}` |
 | Roles | `POST /register` → `CUSTOMER`; `POST /register-courier` → `COURIER` + profile |
@@ -256,7 +256,7 @@ live-courier-tracking/
 |-------|------|
 | Unit | Service tests with JUnit 5 + Mockito (`OrderService`, `UserService`, Redis GEO, courier profile) |
 | Web / security | Controller tests with MockMvc and Spring Security test support |
-| Integration | Order lifecycle and concurrent courier assignment against **Testcontainers** PostgreSQL 16 + Redis 7 |
+| Integration | Order lifecycle, cross-user BOLA and WebSocket authorization, plus concurrent assignment against **Testcontainers** PostgreSQL 16 + Redis 7 |
 | Coverage | JaCoCo (`jacoco-maven-plugin`); HTML report after tests: `target/site/jacoco/index.html` |
 | CI | GitHub Actions runs backend verification, frontend build and Kustomize rendering on pushes and pull requests |
 
@@ -264,6 +264,8 @@ live-courier-tracking/
 ./mvnw test      # Linux / macOS
 mvnw.cmd test    # Windows
 ```
+
+Docker must be running because integration tests start PostgreSQL and Redis with Testcontainers.
 
 No public coverage badge is published (no Codecov/Coveralls). Open the JaCoCo HTML report locally after `mvn test`.
 
