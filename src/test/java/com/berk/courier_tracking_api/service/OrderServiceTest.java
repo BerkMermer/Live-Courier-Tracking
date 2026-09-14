@@ -14,8 +14,6 @@ import com.berk.courier_tracking_api.repository.CourierProfileRepository;
 import com.berk.courier_tracking_api.repository.OrderRepository;
 import com.berk.courier_tracking_api.repository.UserRepository;
 import com.berk.courier_tracking_api.security.UserPrincipal;
-import com.berk.courier_tracking_api.repository.OrderRepository;
-import com.berk.courier_tracking_api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -306,5 +304,46 @@ class OrderServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> orderService.markPickedUp(42L, UserPrincipal.from(courierUser)));
         assertEquals(ErrorCode.ORDER_NOT_PICKABLE, ex.getErrorCode());
+    }
+
+    @Test
+    void deleteOrder_whenCancelledByOwner_shouldSetDeletedAt() {
+        User customer = new User();
+        customer.setId(1L);
+        customer.setEmail("customer@example.com");
+        customer.setRole(UserRole.CUSTOMER);
+
+        Order order = new Order();
+        order.setId(42L);
+        order.setCustomer(customer);
+        order.setStatus(OrderStatus.CANCELLED);
+
+        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        orderService.deleteOrder(42L, UserPrincipal.from(customer));
+
+        assertNotNull(order.getDeletedAt());
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void deleteOrder_whenStillActive_shouldThrow() {
+        User customer = new User();
+        customer.setId(1L);
+        customer.setEmail("customer@example.com");
+        customer.setRole(UserRole.CUSTOMER);
+
+        Order order = new Order();
+        order.setId(42L);
+        order.setCustomer(customer);
+        order.setStatus(OrderStatus.ASSIGNED);
+
+        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> orderService.deleteOrder(42L, UserPrincipal.from(customer)));
+        assertEquals(ErrorCode.ORDER_NOT_DELETABLE, ex.getErrorCode());
+        assertNull(order.getDeletedAt());
     }
 }

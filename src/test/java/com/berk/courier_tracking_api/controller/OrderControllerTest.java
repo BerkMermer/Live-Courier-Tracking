@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -168,6 +169,20 @@ class OrderControllerTest {
     @Test
     void cancelOrder_asCourier_shouldReturn403Forbidden() throws Exception {
         mockMvc.perform(post("/api/v1/orders/1/cancel")
+                        .with(user(principal(UserRole.COURIER, 2L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteOrder_asCustomer_shouldReturn204() throws Exception {
+        mockMvc.perform(delete("/api/v1/orders/1")
+                        .with(user(principal(UserRole.CUSTOMER, 1L))))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteOrder_asCourier_shouldReturn403Forbidden() throws Exception {
+        mockMvc.perform(delete("/api/v1/orders/1")
                         .with(user(principal(UserRole.COURIER, 2L))))
                 .andExpect(status().isForbidden());
     }

@@ -60,6 +60,16 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{orderId}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<Void> deleteOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        orderService.deleteOrder(orderId, principal);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{orderId}/assign-courier")
     @PreAuthorize("hasAnyRole('ADMIN', 'COURIER')")
     public ResponseEntity<OrderResponse> assignCourier(

@@ -71,7 +71,7 @@ There is no hosted public URL. After [Quick Start](#quick-start), the live map (
 
 The animation shows the assigned courier approaching the pickup point while the remaining road distance and ETA are recalculated.
 
-The light basemap uses [Stadia Maps](https://stadiamaps.com/) with OpenStreetMap data. Localhost works without credentials; a hosted deployment requires Stadia domain authentication or an API key.
+The map tiles come from OpenStreetMap, so a local clone does not need a map API key.
 
 | Login & panel | Map & API |
 |---|---|
@@ -121,7 +121,7 @@ Location topic: `/topic/courier-location.{courierId}` (`.` instead of `/` — Ra
 ## Features
 
 - **Auth** — `POST /register` and `POST /login` return a JWT. Public registration is always `CUSTOMER`. Endpoints use `@PreAuthorize` plus service-layer ownership checks.
-- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only). `assign-courier` picks the nearest `AVAILABLE` courier from Redis GEO (10 km). Assigned courier: `pickup` (`ASSIGNED` → `PICKED_UP`), then `deliver` (`PICKED_UP` → `DELIVERED`, courier `AVAILABLE` again).
+- **Orders** — create, list (`/me`), detail, cancel (`PENDING` only), then soft-delete (`CANCELLED` / `DELIVERED` only). `assign-courier` picks the nearest `AVAILABLE` courier from Redis GEO (10 km). Assigned courier: `pickup` (`ASSIGNED` → `PICKED_UP`), then `deliver` (`PICKED_UP` → `DELIVERED`, courier `AVAILABLE` again).
 - **Location** — `PUT /couriers/location` writes PostgreSQL, Redis GEO, and STOMP. A customer may `GET` a courier’s location only with an active order (`ASSIGNED` / `PICKED_UP`).
 - **Map** — Leaflet + OSRM route, motorcycle marker, remaining distance / ETA, order history.
 
@@ -137,7 +137,7 @@ Versions live here (badges above are the stack, not a second copy of every numbe
 | Database / cache | PostgreSQL 16, Flyway, Redis 7 (GEO) |
 | Realtime | STOMP WebSocket + SockJS, RabbitMQ (broker relay) |
 | API docs | SpringDoc OpenAPI (Swagger UI) |
-| Frontend | React 18, Vite, Tailwind CSS, Leaflet + Stadia Maps + OSRM |
+| Frontend | React 18, Vite, Tailwind CSS, Leaflet + OpenStreetMap + OSRM |
 | Test / ops | JUnit, Mockito, Testcontainers, JaCoCo, Docker Compose, Kubernetes (Kustomize) |
 
 Spring Boot **4.0.7** is the parent in `pom.xml` (not a 3.x typo).
@@ -180,7 +180,8 @@ Interactive docs: http://localhost:8080/swagger-ui.html
 | POST | `/` | CUSTOMER | Create order |
 | GET | `/me` | CUSTOMER | List own orders |
 | GET | `/{orderId}` | CUSTOMER / COURIER / ADMIN | Detail (ownership enforced) |
-| POST | `/{orderId}/cancel` | CUSTOMER | Cancel order |
+| POST | `/{orderId}/cancel` | CUSTOMER | Cancel order (`PENDING` only) |
+| DELETE | `/{orderId}` | CUSTOMER | Soft-delete `CANCELLED` / `DELIVERED` order |
 | POST | `/{orderId}/assign-courier` | ADMIN / COURIER | Assign nearest courier |
 | POST | `/{orderId}/pickup` | COURIER | `ASSIGNED` → `PICKED_UP` (assigned courier only) |
 | POST | `/{orderId}/deliver` | COURIER | `PICKED_UP` → `DELIVERED`; courier becomes `AVAILABLE` |
@@ -245,6 +246,7 @@ live-courier-tracking/
 | WebSocket | Handshake origins = REST CORS allowlist. Subscribe only `/topic/courier-location.{id}` |
 | Roles | `POST /register` → `CUSTOMER`; `POST /register-courier` → `COURIER` + profile |
 | Passwords | BCrypt |
+| Soft delete | `DELETE /orders/{id}` sets `deleted_at`; Hibernate `@SQLRestriction` hides the row |
 | CORS | Allowlist (`app.cors.allowed-origins`) for REST and SockJS |
 | Actuator | `/actuator/health` public; other actuator endpoints not exposed |
 | Out of scope | Rate limit, HTTPS, token revocation — local Compose demo, not a hosted product |

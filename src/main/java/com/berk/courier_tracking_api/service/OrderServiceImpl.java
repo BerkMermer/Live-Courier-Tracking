@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -85,6 +86,21 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         Order cancelledOrder = orderRepository.save(order);
         return OrderResponse.from(cancelledOrder);
+    }
+
+    @Override
+    @Transactional
+    public void deleteOrder(Long orderId, UserPrincipal principal) {
+        Order order = findOrderOrThrow(orderId);
+        validateCustomerOwnership(order, principal);
+
+        if (!order.getStatus().isTerminal()) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_DELETABLE,
+                    "Aktif sipariş gizlenemez, mevcut durum: " + order.getStatus());
+        }
+
+        order.setDeletedAt(LocalDateTime.now());
+        orderRepository.save(order);
     }
 
     @Override

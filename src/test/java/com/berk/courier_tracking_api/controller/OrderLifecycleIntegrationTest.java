@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -125,6 +126,40 @@ class OrderLifecycleIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(post("/api/v1/orders/" + order.id() + "/pickup")
                         .header(HttpHeaders.AUTHORIZATION, bearer(anotherCourier.token())))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteOrder_whenCancelled_shouldHideFromListAndDetail() throws Exception {
+        AuthResponse customer = registerCustomer();
+        OrderResponse order = createOrder(customer.token());
+
+        mockMvc.perform(post("/api/v1/orders/" + order.id() + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        mockMvc.perform(delete("/api/v1/orders/" + order.id())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/orders/" + order.id())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/orders/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void deleteOrder_whenStillPending_shouldReturnConflict() throws Exception {
+        AuthResponse customer = registerCustomer();
+        OrderResponse order = createOrder(customer.token());
+
+        mockMvc.perform(delete("/api/v1/orders/" + order.id())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customer.token())))
+                .andExpect(status().isConflict());
     }
 
     private AuthResponse registerCustomer() throws Exception {
