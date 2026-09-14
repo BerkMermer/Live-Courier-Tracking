@@ -38,7 +38,7 @@ async function captureLogin(page) {
   await page.getByPlaceholder('Şifrenizi girin').fill(password);
   await page.waitForTimeout(400);
   await page.screenshot({
-    path: path.join(outDir, 'login-form.png'),
+    path: path.join(outDir, 'login-screen.png'),
     fullPage: true,
   });
 }
@@ -154,7 +154,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
-  console.log('login-form.png');
+  console.log('login-screen.png');
   await captureLogin(page);
 
   console.log('dashboard');

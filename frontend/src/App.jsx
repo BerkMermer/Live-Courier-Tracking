@@ -397,10 +397,6 @@ function App() {
                 : (authMode === 'register' ? 'Kayıt ol' : 'Giriş yap')}
               {!loading && <ArrowRight size={17} />}
             </button>
-
-            <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-              Kurye hesabı için Swagger üzerinden <code className="text-slate-500">/register-courier</code> kullanın.
-            </p>
           </form>
         </main>
       </div>

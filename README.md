@@ -16,7 +16,7 @@ Local after Quick Start: **http://localhost:3000**
 
 | Login | Map | Panel | API |
 |---|---|---|---|
-| ![Login](docs/screenshots/login-form.png) | ![Live tracking](docs/screenshots/map-live.png) | ![Order panel](docs/screenshots/order-sidebar.png) | ![Swagger](docs/screenshots/api-swagger.png) |
+| ![Login](docs/screenshots/login-screen.png) | ![Live tracking](docs/screenshots/map-live.png) | ![Order panel](docs/screenshots/order-sidebar.png) | ![Swagger](docs/screenshots/api-swagger.png) |
 
 ## Quick start
 
