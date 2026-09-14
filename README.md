@@ -6,17 +6,17 @@ Nearest courier via Redis GEO, live map over STOMP WebSocket.
 
 </div>
 
-A customer creates an order. The API assigns the nearest available courier (Redis GEO, 10 km). The courier’s location is pushed to a React + Leaflet map over JWT-secured WebSocket (RabbitMQ STOMP relay).
+A customer creates an order. The API assigns the nearest available courier within 10 km (Redis GEO). The courier’s location streams to a React + Leaflet map over a JWT-secured WebSocket (RabbitMQ STOMP relay).
 
 ## Demo
 
-Local after Quick Start: **http://localhost:3000**
+After Quick start: **http://localhost:3000**
 
 ![Live courier approach](docs/screenshots/live-tracking-demo.gif)
 
-| Login | Map | Panel | API |
-|---|---|---|---|
-| ![Login](docs/screenshots/login-screen.png) | ![Live tracking](docs/screenshots/map-live.png) | ![Order panel](docs/screenshots/order-sidebar.png) | ![Swagger](docs/screenshots/api-swagger.png) |
+| Login | Map | Panel | Contact | API |
+|---|---|---|---|---|
+| ![Login](docs/screenshots/login-screen.png) | ![Live tracking](docs/screenshots/map-live.png) | ![Order panel](docs/screenshots/order-sidebar.png) | ![Contact](docs/screenshots/contact-modal.png) | ![Swagger](docs/screenshots/api-swagger.png) |
 
 ## Quick start
 
@@ -30,7 +30,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-| | URL |
+| Service | URL |
 |---|---|
 | Map | http://localhost:3000 |
 | API / Swagger | http://localhost:8080/swagger-ui.html |
@@ -39,13 +39,15 @@ docker compose up --build -d
 docker compose down
 ```
 
-Do not commit `.env`. Frontend without Compose: `cd frontend && npm install && npm run dev`.
+Do not commit `.env`.
+
+Frontend only (API already running): `cd frontend && npm install && npm run dev`
 
 ## Architecture
 
 ![System architecture](docs/architecture.png)
 
-Topic: `/topic/courier-location.{courierId}`
+`PUT /api/v1/couriers/location` writes Redis GEO (nearest-courier search) and publishes to `/topic/courier-location.{courierId}` so subscribed map clients update live.
 
 ## Stack
 
@@ -53,14 +55,16 @@ Java 17 · Spring Boot 4 · PostgreSQL 16 · Flyway · Redis GEO · RabbitMQ STO
 
 ## Usage
 
-Swagger → **Authorize** with `Bearer <JWT>`:
+Open Swagger → **Authorize** with `Bearer <JWT>`:
 
 1. `POST /api/v1/auth/register` (customer) and `POST /api/v1/auth/register-courier`
 2. `POST /api/v1/auth/login` — copy the token
 3. Courier token: `PUT /api/v1/couriers/location`
 4. Customer token: `POST /api/v1/orders`
 5. Courier token: `POST /api/v1/orders/{id}/assign-courier`
-6. Open the map, then courier `pickup` → `deliver`
+6. Open the map (customer login), then courier `pickup` → `deliver`
+
+Fresh database has no users — register once, or use the login/register tabs on the map UI.
 
 ## Tests
 
@@ -69,7 +73,7 @@ Swagger → **Authorize** with `Bearer <JWT>`:
 mvnw.cmd test    # Windows
 ```
 
-Unit, MockMvc, and integration tests (order flow, concurrent assignment, WebSocket/BOLA).
+Unit, MockMvc, and integration tests for the order flow, concurrent assignment, and WebSocket topic authorization.
 
 ## Kubernetes
 
@@ -83,7 +87,7 @@ Details: [docs/K8S.md](docs/K8S.md)
 
 ## Security
 
-JWT + roles. Order and live-location access are ownership-checked (REST and STOMP). Passwords are BCrypt. Secrets stay in local `.env`; the K8s script creates a Secret at deploy time.
+JWT + roles. Order and live-location access are ownership-checked on REST and STOMP subscribe. Passwords are BCrypt. Secrets stay in local `.env`; the K8s script creates a Secret at deploy time.
 
 ## License
 

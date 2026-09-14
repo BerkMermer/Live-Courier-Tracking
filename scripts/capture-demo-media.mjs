@@ -1,5 +1,8 @@
 /**
- * Capture portfolio screenshots + a short live-demo GIF from the local UI.
+ * Capture portfolio screenshots + live-demo GIF from the local UI.
+ * Compose: DEMO_URL=http://localhost:3000 DEMO_API_URL=http://localhost:8080
+ * K8s:    DEMO_URL=http://127.0.0.1:18080 (API proxied same-origin)
+ *
  * Usage: node scripts/capture-demo-media.mjs
  */
 import { chromium } from 'playwright';
@@ -12,7 +15,10 @@ import gifenc from 'gifenc';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const outDir = path.join(root, 'docs', 'screenshots');
-const baseUrl = process.env.DEMO_URL || 'http://127.0.0.1:18080';
+const baseUrl = process.env.DEMO_URL || 'http://127.0.0.1:3000';
+const apiUrl = process.env.DEMO_API_URL || (
+  /:(3000|5173)\/?$/.test(baseUrl) ? 'http://127.0.0.1:8080' : baseUrl
+);
 const email = process.env.DEMO_EMAIL || 'berk.mermer@example.com';
 const password = process.env.DEMO_PASSWORD || 'securePass123';
 
@@ -26,17 +32,17 @@ async function waitForMap(page) {
 
 async function login(page) {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  await page.getByPlaceholder('mert.kaya@example.com').fill(email);
+  await page.getByPlaceholder('E-posta adresinizi girin').fill(email);
   await page.getByPlaceholder('Şifrenizi girin').fill(password);
   await page.getByRole('button', { name: 'Giriş yap' }).click();
   await page.waitForSelector('text=Sipariş takibi', { timeout: 30000 });
 }
 
+/** Empty fields — placeholders only, no typed credentials. */
 async function captureLogin(page) {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  await page.getByPlaceholder('mert.kaya@example.com').fill(email);
-  await page.getByPlaceholder('Şifrenizi girin').fill(password);
-  await page.waitForTimeout(400);
+  await page.locator('body').click({ position: { x: 8, y: 8 } });
+  await page.waitForTimeout(300);
   await page.screenshot({
     path: path.join(outDir, 'login-screen.png'),
     fullPage: true,
@@ -45,7 +51,6 @@ async function captureLogin(page) {
 
 async function captureDashboard(page) {
   await page.setViewportSize({ width: 1440, height: 900 });
-  // Move courier to ~35% along the road so the blue polyline is visible
   await page.evaluate(async (url) => {
     const loginRes = await fetch(`${url}/api/v1/auth/login`, {
       method: 'POST',
@@ -69,11 +74,18 @@ async function captureDashboard(page) {
       },
       body: JSON.stringify({ latitude: lat, longitude: lng }),
     });
-  }, baseUrl);
+  }, apiUrl);
+
   await page.getByRole('button', { name: /Yenile/i }).click().catch(() => {});
   await waitForMap(page);
-  // Wait for OSRM polyline + snap to settle so the moto sits on the blue line
+  // Prefer the live/assigned order in history (not delivered/cancelled leftovers)
+  const liveOrder = page.getByRole('button').filter({ hasText: /Alışa gidiyor|Atandı|Yolda/i }).first();
+  if (await liveOrder.count()) {
+    await liveOrder.click();
+    await page.waitForTimeout(800);
+  }
   await page.waitForTimeout(3500);
+
   await page.screenshot({
     path: path.join(outDir, 'map-live.png'),
     fullPage: false,
@@ -81,6 +93,16 @@ async function captureDashboard(page) {
 
   const panel = page.locator('aside').first();
   await panel.screenshot({ path: path.join(outDir, 'order-sidebar.png') });
+
+  await page.getByRole('button', { name: /İletişime geç/i }).click();
+  await page.waitForSelector('#contact-modal-title', { timeout: 10000 });
+  await page.waitForTimeout(400);
+  await page.screenshot({
+    path: path.join(outDir, 'contact-modal.png'),
+    fullPage: false,
+  });
+  await page.getByRole('button', { name: /İletişim penceresini kapat/i }).click();
+  await page.waitForTimeout(300);
 }
 
 async function captureGif(page, frames = 12) {
@@ -88,8 +110,6 @@ async function captureGif(page, frames = 12) {
   fs.rmSync(frameDir, { recursive: true, force: true });
   fs.mkdirSync(frameDir, { recursive: true });
 
-  const api = baseUrl;
-  // Re-walk a few mid-route points via UI refresh by calling location endpoint from page
   const walk = await page.evaluate(async (url) => {
     const loginRes = await fetch(`${url}/api/v1/auth/login`, {
       method: 'POST',
@@ -110,7 +130,7 @@ async function captureGif(page, frames = 12) {
     }
     points.push([coords[coords.length - 1][1], coords[coords.length - 1][0]]);
     return { token, points };
-  }, api);
+  }, apiUrl);
 
   const paths = [];
   for (let i = 0; i < Math.min(frames, walk.points.length); i += 1) {
@@ -126,7 +146,7 @@ async function captureGif(page, frames = 12) {
           body: JSON.stringify({ latitude: lat, longitude: lng }),
         });
       },
-      { url: api, token: walk.token, lat, lng }
+      { url: apiUrl, token: walk.token, lat, lng }
     );
     await page.waitForTimeout(1100);
     const framePath = path.join(frameDir, `frame-${String(i).padStart(2, '0')}.png`);
@@ -149,15 +169,30 @@ async function captureGif(page, frames = 12) {
   console.log('Wrote', gifPath);
 }
 
+async function captureSwagger(page) {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${apiUrl}/swagger-ui/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1500);
+  await page.screenshot({
+    path: path.join(outDir, 'api-swagger.png'),
+    fullPage: false,
+  });
+}
+
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
+  console.log({ baseUrl, apiUrl });
+
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
-  console.log('login-screen.png');
+  console.log('login-screen.png (empty)');
   await captureLogin(page);
 
-  console.log('dashboard');
+  console.log('api-swagger.png');
+  await captureSwagger(page);
+
+  console.log('dashboard + contact');
   await login(page);
   await captureDashboard(page);
 
