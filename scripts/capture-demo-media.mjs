@@ -32,32 +32,13 @@ async function login(page) {
   await page.waitForSelector('text=Sipariş takibi', { timeout: 30000 });
 }
 
-async function captureLoginMasked(page) {
+async function captureLogin(page) {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  await page.evaluate(() => {
-    const inputs = [...document.querySelectorAll('input')];
-    const email = inputs.find((i) => i.type === 'email');
-    const pass = inputs.find((i) => i.type === 'password');
-    if (email) {
-      email.value = 'berk.mermer@example.com';
-      email.style.webkitTextSecurity = 'disc';
-      email.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (pass) {
-      pass.value = 'securePass123';
-      pass.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  });
-  // React controlled inputs need fill via Playwright for password dots
-  await page.getByPlaceholder('mert.kaya@example.com').fill('berk.mermer@example.com');
-  await page.getByPlaceholder('Şifrenizi girin').fill('securePass123');
-  await page.evaluate(() => {
-    const email = document.querySelector('input[type="email"]');
-    if (email) email.style.webkitTextSecurity = 'disc';
-  });
+  await page.getByPlaceholder('mert.kaya@example.com').fill(email);
+  await page.getByPlaceholder('Şifrenizi girin').fill(password);
   await page.waitForTimeout(400);
   await page.screenshot({
-    path: path.join(outDir, 'login-panel.png'),
+    path: path.join(outDir, 'login-form.png'),
     fullPage: true,
   });
 }
@@ -173,8 +154,8 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
-  console.log('login-panel.png');
-  await captureLoginMasked(page);
+  console.log('login-form.png');
+  await captureLogin(page);
 
   console.log('dashboard');
   await login(page);
