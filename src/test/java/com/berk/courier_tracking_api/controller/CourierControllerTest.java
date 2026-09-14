@@ -88,6 +88,17 @@ class CourierControllerTest {
     }
 
     @Test
+    void updateLocation_withOutOfRangeCoordinates_shouldReturn400BadRequest() throws Exception {
+        LocationUpdateRequest request = new LocationUpdateRequest(-91.0, 181.0);
+
+        mockMvc.perform(put("/api/v1/couriers/location")
+                        .with(user(principal(UserRole.COURIER, 10L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getCourierLocation_asCustomer_shouldReturn200() throws Exception {
         when(courierProfileService.getLocationById(eq(5L), any())).thenReturn(sampleLocationResponse(5L));
 

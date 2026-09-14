@@ -106,6 +106,19 @@ class OrderControllerTest {
     }
 
     @Test
+    void createOrder_withOutOfRangeCoordinates_shouldReturn400BadRequest() throws Exception {
+        String invalidJson = """
+                {"pickupAddress": "Kadıköy", "pickupLatitude": 91, "pickupLongitude": -181, "deliveryAddress": "Beşiktaş"}
+                """;
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .with(user(principal(UserRole.CUSTOMER, 1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getMyOrders_asCustomer_shouldReturn200WithOwnOrders() throws Exception {
         when(orderService.getOrdersByCustomer(1L)).thenReturn(List.of(sampleOrderResponse()));
 
@@ -129,6 +142,18 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/v1/orders/1")
                         .with(user(principal(UserRole.ADMIN, 99L))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void getOrder_whenUnexpectedFailure_shouldReturnGeneric500Response() throws Exception {
+        when(orderService.getOrderById(eq(1L), any()))
+                .thenThrow(new RuntimeException("internal database detail"));
+
+        mockMvc.perform(get("/api/v1/orders/1")
+                        .with(user(principal(UserRole.ADMIN, 99L))))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message")
+                        .value("Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."));
     }
 
     @Test
