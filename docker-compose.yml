@@ -1,7 +1,3 @@
-# Tüm gizli değerleri (şifreler, JWT_SECRET) projenin kökünde bir .env
-# dosyasında tutun ve .env'i .gitignore'a ekleyin. Docker Compose bu dosyayı
-# otomatik okur; aşağıdaki ${VAR:-default} değerleri yalnızca .env yoksa
-# devreye giren local-dev fallback'leridir.
 services:
   postgres:
     image: postgres:16-alpine
